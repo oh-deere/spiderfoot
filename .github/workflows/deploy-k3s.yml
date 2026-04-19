@@ -1,0 +1,40 @@
+name: Build and Deploy to k3s
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: 10.10.2.181:30500
+  IMAGE_NAME: ohdeere-spiderfoot
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, ohdeere-k3s]
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and push image
+        run: |
+          docker build \
+            -t $REGISTRY/$IMAGE_NAME:${{ steps.tag.outputs.tag }} \
+            -t $REGISTRY/$IMAGE_NAME:latest \
+            .
+          docker push $REGISTRY/$IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          docker push $REGISTRY/$IMAGE_NAME:latest
+
+      - name: Deploy to k3s
+        run: |
+          kubectl set image deployment/ohdeere-spiderfoot \
+            spiderfoot=$REGISTRY/$IMAGE_NAME:${{ steps.tag.outputs.tag }} \
+            -n ohdeere
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/ohdeere-spiderfoot -n ohdeere --timeout=240s
+
+      - name: Verify pod
+        run: kubectl get pods -n ohdeere -l app=ohdeere-spiderfoot -o wide
