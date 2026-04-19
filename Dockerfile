@@ -51,6 +51,11 @@ ENV SPIDERFOOT_DATA=/var/lib/spiderfoot
 ENV SPIDERFOOT_LOGS=/var/lib/spiderfoot/log
 ENV SPIDERFOOT_CACHE=/var/lib/spiderfoot/cache
 
+# Structured logging for Loki. Override with SPIDERFOOT_LOG_FORMAT=text
+# for interactive debugging (e.g. docker run -it ... /bin/sh).
+ENV SPIDERFOOT_LOG_FORMAT=json
+ENV SPIDERFOOT_LOG_FILES=false
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libxslt1.1 libxml2 libjpeg62-turbo zlib1g libopenjp2-7 \
     && rm -rf /var/lib/apt/lists/* \
