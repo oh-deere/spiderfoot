@@ -57,6 +57,39 @@ class SpiderFootJsonFormatter(logging.Formatter):
         return json.dumps(fields, default=str)
 
 
+def _should_use_json() -> bool:
+    """Decide whether the console handler should emit JSON.
+
+    ``SPIDERFOOT_LOG_FORMAT`` = ``json`` or ``text`` is a deterministic
+    override. Anything else (including unset) falls back to
+    ``sys.stdout.isatty()`` — interactive terminal gets text,
+    non-TTY (pipe, container) gets JSON.
+
+    Returns:
+        bool: True if the JSON formatter should be used.
+    """
+    override = os.environ.get("SPIDERFOOT_LOG_FORMAT", "").lower()
+    if override == "json":
+        return True
+    if override == "text":
+        return False
+    # Fail-open to auto-detect for any unknown value.
+    return not sys.stdout.isatty()
+
+
+def _log_files_enabled() -> bool:
+    """Return False only when ``SPIDERFOOT_LOG_FILES`` is explicitly ``false``.
+
+    Any other value (including unset) preserves the legacy rotating
+    file handlers.
+
+    Returns:
+        bool: True if the rotating file handlers should be attached.
+    """
+    value = os.environ.get("SPIDERFOOT_LOG_FILES", "").lower()
+    return value != "false"
+
+
 class SpiderFootSqliteLogHandler(logging.Handler):
     """Handler for logging to SQLite database.
 

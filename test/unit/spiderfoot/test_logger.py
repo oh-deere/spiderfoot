@@ -1,9 +1,15 @@
 # test_logger.py
 import json
 import logging
+import os
 import unittest
+from unittest import mock
 
-from spiderfoot.logger import SpiderFootJsonFormatter
+from spiderfoot.logger import (
+    SpiderFootJsonFormatter,
+    _log_files_enabled,
+    _should_use_json,
+)
 
 
 def _make_record(msg="hello", level=logging.INFO, extras=None, exc_info=None):
@@ -71,3 +77,63 @@ class TestSpiderFootJsonFormatter(unittest.TestCase):
         # Should not raise — falls back to str() via default=str
         parsed = json.loads(formatter.format(record))
         self.assertEqual(parsed["scanId"], "opaque-value")
+
+
+class TestShouldUseJson(unittest.TestCase):
+
+    def _run(self, env_value, isatty_value):
+        env = {} if env_value is None else {"SPIDERFOOT_LOG_FORMAT": env_value}
+        with mock.patch.dict("os.environ", env, clear=False):
+            if env_value is None:
+                # Ensure the var is absent even if the outer env had it.
+                os_env_backup = os.environ.pop("SPIDERFOOT_LOG_FORMAT", None)
+                try:
+                    with mock.patch("sys.stdout.isatty", return_value=isatty_value):
+                        return _should_use_json()
+                finally:
+                    if os_env_backup is not None:
+                        os.environ["SPIDERFOOT_LOG_FORMAT"] = os_env_backup
+            else:
+                with mock.patch("sys.stdout.isatty", return_value=isatty_value):
+                    return _should_use_json()
+
+    def test_env_json_forces_json(self):
+        self.assertTrue(self._run("json", isatty_value=True))
+        self.assertTrue(self._run("json", isatty_value=False))
+
+    def test_env_text_forces_text(self):
+        self.assertFalse(self._run("text", isatty_value=True))
+        self.assertFalse(self._run("text", isatty_value=False))
+
+    def test_env_unset_follows_tty(self):
+        # Interactive terminal → text
+        self.assertFalse(self._run(None, isatty_value=True))
+        # Pipe/container → json
+        self.assertTrue(self._run(None, isatty_value=False))
+
+    def test_env_bogus_value_falls_through_to_tty(self):
+        self.assertFalse(self._run("garbage", isatty_value=True))
+        self.assertTrue(self._run("garbage", isatty_value=False))
+
+
+class TestLogFilesEnabled(unittest.TestCase):
+
+    def _run(self, env_value):
+        env = {} if env_value is None else {"SPIDERFOOT_LOG_FILES": env_value}
+        with mock.patch.dict("os.environ", env, clear=False):
+            if env_value is None:
+                os.environ.pop("SPIDERFOOT_LOG_FILES", None)
+            return _log_files_enabled()
+
+    def test_unset_defaults_to_enabled(self):
+        self.assertTrue(self._run(None))
+
+    def test_explicit_true(self):
+        self.assertTrue(self._run("true"))
+        self.assertTrue(self._run("TRUE"))
+        self.assertTrue(self._run("anything-that-is-not-false"))
+
+    def test_explicit_false(self):
+        self.assertFalse(self._run("false"))
+        self.assertFalse(self._run("False"))
+        self.assertFalse(self._run("FALSE"))
