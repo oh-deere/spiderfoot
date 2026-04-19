@@ -1,11 +1,60 @@
 import atexit
+import json
 import logging
+import os
 import sys
 import time
 from contextlib import suppress
+from datetime import datetime, timezone
 from logging.handlers import QueueHandler, QueueListener
 
 from spiderfoot import SpiderFootDb, SpiderFootHelpers
+
+# Standard LogRecord attributes we don't want re-emitted as "extras".
+# Everything else set via logger.*(..., extra={...}) becomes a
+# top-level JSON field.
+_STANDARD_LOGRECORD_ATTRS = frozenset({
+    "name", "msg", "args", "levelname", "levelno", "pathname",
+    "filename", "module", "exc_info", "exc_text", "stack_info",
+    "lineno", "funcName", "created", "msecs", "relativeCreated",
+    "thread", "threadName", "processName", "process", "message",
+    "asctime", "taskName",
+})
+
+
+class SpiderFootJsonFormatter(logging.Formatter):
+    """Emit one compact JSON object per log record.
+
+    Produces RFC3339 UTC timestamps with millisecond precision and
+    promotes any ``extra={...}`` keyword from the caller into a
+    top-level field. ``scanId`` (set by SpiderFootPlugin helpers) is
+    the primary filter operators use via ``| json | scanId="..."``
+    in LogQL.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        ts = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        # Millisecond precision, trailing Z.
+        timestamp = ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
+
+        fields = {
+            "timestamp": timestamp,
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+        }
+
+        # Promote any caller-supplied extras (scanId, component, etc.)
+        for key, value in record.__dict__.items():
+            if key in _STANDARD_LOGRECORD_ATTRS or key.startswith("_"):
+                continue
+            fields[key] = value
+
+        if record.exc_info:
+            fields["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(fields, default=str)
 
 
 class SpiderFootSqliteLogHandler(logging.Handler):
