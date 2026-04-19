@@ -41,6 +41,14 @@ from spiderfoot import SpiderFootHelpers
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # noqa: DUO131
 
 
+def _netaddr_is_private(addr: netaddr.IPAddress) -> bool:
+    # netaddr 1.x removed IPAddress.is_private() in favour of version-specific
+    # helpers. Preserve the old semantics (RFC1918 / RFC4193 ULA).
+    if addr.version == 4:
+        return addr.is_ipv4_private_use()
+    return addr.is_ipv6_unique_local()
+
+
 class SpiderFoot:
     """SpiderFoot
 
@@ -794,7 +802,9 @@ class SpiderFoot:
             return False
         if netaddr.IPAddress(ip).is_multicast():
             return False
-        if netaddr.IPAddress(ip).is_private():
+        if netaddr.IPAddress(ip).is_link_local():
+            return False
+        if _netaddr_is_private(netaddr.IPAddress(ip)):
             return False
         return True
 
@@ -994,8 +1004,7 @@ class SpiderFoot:
         if isinstance(rawcert, str):
             rawcert = rawcert.encode('utf-8')
 
-        from cryptography.hazmat.backends.openssl import backend
-        cert = cryptography.x509.load_pem_x509_certificate(rawcert, backend)
+        cert = cryptography.x509.load_pem_x509_certificate(rawcert)
         sslcert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, rawcert)
         sslcert_dump = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_TEXT, sslcert)
 
@@ -1130,7 +1139,7 @@ class SpiderFoot:
         if not self.validIP(ip) and not self.validIP6(ip):
             return False
 
-        if netaddr.IPAddress(ip).is_private():
+        if _netaddr_is_private(netaddr.IPAddress(ip)):
             return True
 
         if netaddr.IPAddress(ip).is_loopback():
@@ -1171,7 +1180,7 @@ class SpiderFoot:
 
         # Never proxy RFC1918 addresses on the LAN or the local network interface
         if self.validIP(host):
-            if netaddr.IPAddress(host).is_private():
+            if _netaddr_is_private(netaddr.IPAddress(host)):
                 return False
             if netaddr.IPAddress(host).is_loopback():
                 return False
