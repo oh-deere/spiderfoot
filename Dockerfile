@@ -3,12 +3,6 @@
 #
 # http://www.spiderfoot.net
 #
-# Written by: Michael Pellon <m@pellon.io>
-# Updated by: Chandrapal <bnchandrapal@protonmail.com>
-# Updated by: Steve Micallef <steve@binarypool.com>
-# Updated by: Steve Bate <svc-spiderfoot@stevebate.net>
-#    -> Inspired by https://github.com/combro2k/dockerfiles/tree/master/alpine-spiderfoot
-#
 # Usage:
 #
 #   sudo docker build -t spiderfoot .
@@ -32,45 +26,39 @@
 # Running spiderfoot unit tests in container
 #
 #   sudo docker build -t spiderfoot-test --build-arg REQUIREMENTS=test/requirements.txt .
-#   sudo docker run --rm spiderfoot-test -m pytest --flake8 .
+#   sudo docker run --rm spiderfoot-test -m pytest .
 
-FROM alpine:3.12.4 AS build
+FROM python:3.12-slim-bookworm AS build
 ARG REQUIREMENTS=requirements.txt
-RUN apk add --no-cache gcc git curl python3 python3-dev py3-pip swig tinyxml-dev \
- python3-dev musl-dev openssl-dev libffi-dev libxslt-dev libxml2-dev jpeg-dev \
- openjpeg-dev zlib-dev cargo rust
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc git curl swig \
+        libssl-dev libffi-dev libxslt1-dev libxml2-dev \
+        libjpeg-dev zlib1g-dev libopenjp2-7-dev \
+    && rm -rf /var/lib/apt/lists/*
 RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin":$PATH
+ENV PATH="/opt/venv/bin:$PATH"
 COPY $REQUIREMENTS requirements.txt ./
-RUN ls
-RUN echo "$REQUIREMENTS"
-RUN pip3 install -U pip
+RUN pip3 install --upgrade pip
 RUN pip3 install -r "$REQUIREMENTS"
 
 
 
-FROM alpine:3.13.0
+FROM python:3.12-slim-bookworm
 WORKDIR /home/spiderfoot
 
 # Place database and logs outside installation directory
-ENV SPIDERFOOT_DATA /var/lib/spiderfoot
-ENV SPIDERFOOT_LOGS /var/lib/spiderfoot/log
-ENV SPIDERFOOT_CACHE /var/lib/spiderfoot/cache
+ENV SPIDERFOOT_DATA=/var/lib/spiderfoot
+ENV SPIDERFOOT_LOGS=/var/lib/spiderfoot/log
+ENV SPIDERFOOT_CACHE=/var/lib/spiderfoot/cache
 
-# Run everything as one command so that only one layer is created
-RUN apk --update --no-cache add python3 musl openssl libxslt tinyxml libxml2 jpeg zlib openjpeg \
-    && addgroup spiderfoot \
-    && adduser -G spiderfoot -h /home/spiderfoot -s /sbin/nologin \
-               -g "SpiderFoot User" -D spiderfoot \
-    && rm -rf /var/cache/apk/* \
-    && rm -rf /lib/apk/db \
-    && rm -rf /root/.cache \
-    && mkdir -p $SPIDERFOOT_DATA || true \
-    && mkdir -p $SPIDERFOOT_LOGS || true \
-    && mkdir -p $SPIDERFOOT_CACHE || true \
-    && chown spiderfoot:spiderfoot $SPIDERFOOT_DATA \
-    && chown spiderfoot:spiderfoot $SPIDERFOOT_LOGS \
-    && chown spiderfoot:spiderfoot $SPIDERFOOT_CACHE
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libxslt1.1 libxml2 libjpeg62-turbo zlib1g libopenjp2-7 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd spiderfoot \
+    && useradd -m -g spiderfoot -d /home/spiderfoot -s /sbin/nologin \
+               -c "SpiderFoot User" spiderfoot \
+    && mkdir -p $SPIDERFOOT_DATA $SPIDERFOOT_LOGS $SPIDERFOOT_CACHE \
+    && chown spiderfoot:spiderfoot $SPIDERFOOT_DATA $SPIDERFOOT_LOGS $SPIDERFOOT_CACHE
 
 COPY . .
 COPY --from=build /opt/venv /opt/venv
