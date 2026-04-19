@@ -1,7 +1,9 @@
 # test_spiderfootevent.py
+import logging
 import unittest
 
 from spiderfoot import SpiderFootEvent
+from spiderfoot.event_types import EventType
 
 
 class TestSpiderFootEvent(unittest.TestCase):
@@ -361,3 +363,73 @@ class TestSpiderFootEvent(unittest.TestCase):
         evt_hash = evt.hash
 
         self.assertIsInstance(evt_hash, str)
+
+
+class TestSpiderFootEventTypedRegistry(unittest.TestCase):
+
+    def _root_source(self):
+        return SpiderFootEvent("ROOT", "seed", "", "")
+
+    def test_accepts_enum_event_type(self):
+        root = self._root_source()
+        evt = SpiderFootEvent(EventType.INTERNET_NAME, "example.com",
+                              "test_mod", root)
+        self.assertEqual(evt.eventType, "INTERNET_NAME")
+        self.assertEqual(evt.eventType, EventType.INTERNET_NAME)
+        self.assertIsInstance(evt.eventType, str)
+
+    def test_accepts_str_event_type(self):
+        root = self._root_source()
+        evt = SpiderFootEvent("INTERNET_NAME", "example.com", "test_mod", root)
+        self.assertEqual(evt.eventType, "INTERNET_NAME")
+        self.assertEqual(evt.eventType, EventType.INTERNET_NAME)
+
+    def test_str_and_enum_constructor_produce_equal_events(self):
+        root = self._root_source()
+        evt_str = SpiderFootEvent("INTERNET_NAME", "example.com", "m", root)
+        evt_enum = SpiderFootEvent(EventType.INTERNET_NAME, "example.com", "m",
+                                   root)
+        self.assertEqual(evt_str.eventType, evt_enum.eventType)
+        self.assertEqual(evt_str.data, evt_enum.data)
+        self.assertEqual(evt_str.module, evt_enum.module)
+
+    def test_unknown_event_type_warns_but_creates_event(self):
+        root = self._root_source()
+        with self.assertLogs("spiderfoot.event", level="WARNING") as cm:
+            evt = SpiderFootEvent("NOT_A_REAL_TYPE", "x", "m", root)
+        self.assertIsInstance(evt, SpiderFootEvent)
+        self.assertEqual(evt.eventType, "NOT_A_REAL_TYPE")
+        joined = "\n".join(cm.output).lower()
+        self.assertIn("unknown eventtype", joined)
+
+    def test_validator_failure_warns_but_creates_event(self):
+        root = self._root_source()
+        # Temporarily install a always-false validator on IP_ADDRESS.
+        from spiderfoot.event_types import EVENT_TYPES, EventTypeDef
+        original = EVENT_TYPES[EventType.IP_ADDRESS]
+        EVENT_TYPES[EventType.IP_ADDRESS] = EventTypeDef(
+            name=original.name,
+            description=original.description,
+            category=original.category,
+            is_raw=original.is_raw,
+            validator=lambda data: False,
+        )
+        try:
+            with self.assertLogs("spiderfoot.event", level="WARNING") as cm:
+                evt = SpiderFootEvent("IP_ADDRESS", "1.2.3.4", "m", root)
+        finally:
+            EVENT_TYPES[EventType.IP_ADDRESS] = original
+        self.assertIsInstance(evt, SpiderFootEvent)
+        self.assertEqual(evt.data, "1.2.3.4")
+        joined = "\n".join(cm.output).lower()
+        self.assertIn("validation failed", joined)
+
+    def test_no_validator_means_no_warning(self):
+        root = self._root_source()
+        # INTERNET_NAME has validator=None on day 1. assertNoLogs was added
+        # in Python 3.10.
+        logger = logging.getLogger("spiderfoot.event")
+        with self.assertNoLogs("spiderfoot.event", level="WARNING"):
+            SpiderFootEvent("INTERNET_NAME", "example.com", "m", root)
+        # Silence "unused" flake8 complaint about the logger handle.
+        _ = logger
