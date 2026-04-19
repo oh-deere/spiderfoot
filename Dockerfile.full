@@ -55,8 +55,12 @@ RUN git clone https://github.com/AliasIO/wappalyzer.git \
     && yarn install && yarn run link
 
 # Install Nuclei
-RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v3.3.10/nuclei_3.3.10_linux_amd64.zip \
-    && unzip nuclei_3.3.10_linux_amd64.zip \
+# Pinned to last 2.x release because sfp_tool_nuclei.py uses v2 CLI flags
+# (-json, -etags, -no-interactsh) which changed in Nuclei v3. Moving to v3
+# requires updating the module's flag list and JSON-output parsing and is
+# tracked separately from this dep bump.
+RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v2.9.15/nuclei_2.9.15_linux_amd64.zip \
+    && unzip nuclei_2.9.15_linux_amd64.zip \
     && git clone https://github.com/projectdiscovery/nuclei-templates.git
 
 # Install testssl.sh
