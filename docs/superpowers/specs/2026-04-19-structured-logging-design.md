@@ -85,8 +85,21 @@ Conditionally present:
 
 Field names are chosen for Grafana Loki's JSON parser default
 pipeline: `level`, `timestamp`, `message` are auto-recognized by the
-built-in detected-field logic; `scanId` is the label operators will
-filter on.
+built-in detected-field logic. `scanId` is intentionally **a
+JSON-parsed field, not a Loki index label** — scan IDs are
+effectively unbounded cardinality (every new scan is a new value),
+so promoting them to an index label would explode Loki's series
+count within weeks. Operators filter on `scanId` with a LogQL
+pipeline on the read side, e.g.
+
+```
+{app="ohdeere-spiderfoot"} | json | scanId="abcd-1234"
+```
+
+Our Promtail config (`manifests/monitoring/promtail.yaml` in
+wimo-infra) deliberately does not add any json stage that would
+promote fields into labels; it only extracts pod/namespace/app from
+Kubernetes metadata. That's the desired shape — keep it that way.
 
 ### Dockerfile defaults
 
