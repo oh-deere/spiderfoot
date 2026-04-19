@@ -1,14 +1,18 @@
 # test_logger.py
 import json
 import logging
+import multiprocessing
 import os
 import unittest
+from logging.handlers import TimedRotatingFileHandler
 from unittest import mock
 
+from spiderfoot import SpiderFootHelpers
 from spiderfoot.logger import (
     SpiderFootJsonFormatter,
     _log_files_enabled,
     _should_use_json,
+    logListenerSetup,
 )
 
 
@@ -137,3 +141,59 @@ class TestLogFilesEnabled(unittest.TestCase):
         self.assertFalse(self._run("false"))
         self.assertFalse(self._run("False"))
         self.assertFalse(self._run("FALSE"))
+
+
+def _minimal_opts():
+    return {
+        "_debug": False,
+        "__logging": True,
+        "__database": f"{SpiderFootHelpers.dataPath()}/spiderfoot.test.db",
+    }
+
+
+class TestLogListenerSetup(unittest.TestCase):
+
+    def _run(self, env):
+        q = multiprocessing.Queue()
+        with mock.patch.dict("os.environ", env, clear=False):
+            listener = logListenerSetup(q, _minimal_opts())
+        try:
+            return list(listener.handlers)
+        finally:
+            listener.stop()
+
+    def test_json_formatter_selected_when_env_json(self):
+        handlers = self._run({"SPIDERFOOT_LOG_FORMAT": "json",
+                              "SPIDERFOOT_LOG_FILES": "true"})
+        console = next(h for h in handlers
+                       if isinstance(h, logging.StreamHandler)
+                       and not isinstance(h, TimedRotatingFileHandler))
+        self.assertIsInstance(console.formatter, SpiderFootJsonFormatter)
+
+    def test_text_formatter_selected_when_env_text(self):
+        handlers = self._run({"SPIDERFOOT_LOG_FORMAT": "text",
+                              "SPIDERFOOT_LOG_FILES": "true"})
+        console = next(h for h in handlers
+                       if isinstance(h, logging.StreamHandler)
+                       and not isinstance(h, TimedRotatingFileHandler))
+        self.assertNotIsInstance(console.formatter, SpiderFootJsonFormatter)
+
+    def test_file_handlers_absent_when_log_files_false(self):
+        handlers = self._run({"SPIDERFOOT_LOG_FILES": "false",
+                              "SPIDERFOOT_LOG_FORMAT": "text"})
+        file_handlers = [h for h in handlers
+                         if isinstance(h, TimedRotatingFileHandler)]
+        self.assertEqual(file_handlers, [])
+
+    def test_file_handlers_present_by_default(self):
+        # Default (SPIDERFOOT_LOG_FILES unset) preserves legacy handlers.
+        # Ensure the var isn't leaking in from the outer shell environment.
+        original = os.environ.pop("SPIDERFOOT_LOG_FILES", None)
+        try:
+            handlers = self._run({"SPIDERFOOT_LOG_FORMAT": "text"})
+            file_handlers = [h for h in handlers
+                             if isinstance(h, TimedRotatingFileHandler)]
+            self.assertEqual(len(file_handlers), 2)
+        finally:
+            if original is not None:
+                os.environ["SPIDERFOOT_LOG_FILES"] = original

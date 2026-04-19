@@ -195,12 +195,18 @@ def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.Queue
     # Set log format
     log_format = logging.Formatter("%(asctime)s [%(levelname)s] %(module)s : %(message)s")
     debug_format = logging.Formatter("%(asctime)s [%(levelname)s] %(filename)s:%(lineno)s : %(message)s")
-    console_handler.setFormatter(log_format)
+    if _should_use_json():
+        console_handler.setFormatter(SpiderFootJsonFormatter())
+    else:
+        console_handler.setFormatter(log_format)
     debug_handler.setFormatter(debug_format)
     error_handler.setFormatter(debug_format)
 
     if doLogging:
-        handlers = [console_handler, debug_handler, error_handler]
+        handlers = [console_handler]
+        if _log_files_enabled():
+            handlers.append(debug_handler)
+            handlers.append(error_handler)
     else:
         handlers = []
 

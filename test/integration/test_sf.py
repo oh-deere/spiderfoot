@@ -1,4 +1,5 @@
 # test_sf.py
+import os
 import subprocess
 import sys
 import unittest
@@ -35,14 +36,20 @@ class TestSf(unittest.TestCase):
         "sfp_webanalytics",
     ]
 
-    def execute(self, command):
+    def execute(self, command, env=None):
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
         )
         out, err = proc.communicate()
         return out, err, proc.returncode
+
+    def _text_log_env(self):
+        env = os.environ.copy()
+        env["SPIDERFOOT_LOG_FORMAT"] = "text"
+        return env
 
     def test_no_args_should_print_arg_l_required(self):
         out, err, code = self.execute([sys.executable, "sf.py"])
@@ -74,13 +81,19 @@ class TestSf(unittest.TestCase):
         self.assertEqual(0, code)
 
     def test_debug_arg_should_enable_and_print_debug_output(self):
-        out, err, code = self.execute([sys.executable, "sf.py", "-d", "-m", "example module", "-s", "spiderfoot.net"])
+        out, err, code = self.execute(
+            [sys.executable, "sf.py", "-d", "-m", "example module", "-s", "spiderfoot.net"],
+            env=self._text_log_env(),
+        )
         self.assertIn(b"[DEBUG]", err)
         self.assertIn(b"sfp__stor_db : Storing an event: ROOT", err)
         self.assertEqual(0, code)
 
     def test_quiet_arg_should_hide_debug_output(self):
-        out, err, code = self.execute([sys.executable, "sf.py", "-q", "-m", "example module", "-s", "spiderfoot.net"])
+        out, err, code = self.execute(
+            [sys.executable, "sf.py", "-q", "-m", "example module", "-s", "spiderfoot.net"],
+            env=self._text_log_env(),
+        )
         self.assertNotIn(b"[INFO]", err)
         self.assertEqual(0, code)
 
