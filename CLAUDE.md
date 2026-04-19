@@ -76,6 +76,15 @@ SQLite schema lives entirely in `spiderfoot/db.py` (tables for scans, instances,
 - `test/acceptance/` — Robot Framework end-to-end tests against a live web server.
 - `test/conftest.py` provides the `default_options` / `web_default_options` / `cli_default_options` fixtures most tests rely on and uses a separate `spiderfoot.test.db` file so tests don't touch real scan data.
 
+## Environment variables (runtime)
+
+`sf.py` reads `SPIDERFOOT_DATA`, `SPIDERFOOT_LOGS`, `SPIDERFOOT_CACHE` for data/log/cache paths (see Dockerfile). Two additional env vars control the logging pipeline (see `spiderfoot/logger.py`):
+
+- `SPIDERFOOT_LOG_FORMAT={json,text}` — deterministic override for the console formatter. When unset or set to anything else, the format is auto-selected: text when `sys.stdout.isatty()`, JSON otherwise. The shipped `Dockerfile` sets this to `json`.
+- `SPIDERFOOT_LOG_FILES={true,false}` — when `false`, the two `TimedRotatingFileHandler` instances under `$SPIDERFOOT_LOGS` are not attached; stdout + the SQLite per-scan log become the only log destinations. The shipped `Dockerfile` sets this to `false` so Loki is the single authoritative log store. Default (unset) preserves the historical behavior for `./sf.py` runs from source.
+
+The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by these vars — it's product functionality that feeds the scan UI's "Log" tab.
+
 ## Conventions to follow
 
 - When adding a module, register the `sfp_*.py` filename as the module name; the class inside must match the filename (the loader uses the filename, not the class). Start from `sfp_template.py` so the meta block is filled in correctly — the UI depends on it.
