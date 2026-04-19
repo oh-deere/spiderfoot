@@ -37,9 +37,9 @@ One pure-data module. No DB, filesystem, or logging imports. Owns:
 
 ```python
 class EventTypeCategory(enum.Enum):
-    ROOT = "ROOT"
-    ENTITY = "ENTITY"
+    DATA = "DATA"
     DESCRIPTOR = "DESCRIPTOR"
+    ENTITY = "ENTITY"
     INTERNAL = "INTERNAL"
     SUBENTITY = "SUBENTITY"
 
@@ -177,8 +177,11 @@ design choice.
 - Every `EventTypeDef.name` equals its enum key's value (no drift).
 - Category distribution matches pre-refactor counts (regression fence
   against accidental re-categorization).
-- `EventTypeCategory` has exactly the five values `ROOT`, `ENTITY`,
-  `DESCRIPTOR`, `INTERNAL`, `SUBENTITY`.
+- `EventTypeCategory` has exactly the five values `DATA`,
+  `DESCRIPTOR`, `ENTITY`, `INTERNAL`, `SUBENTITY`.
+- Category distribution freezes at: 79 DESCRIPTOR, 57 ENTITY,
+  30 DATA, 5 SUBENTITY, 1 INTERNAL (total 172).
+- `is_raw` distribution freezes at: 155 False, 17 True.
 
 **New behaviour tests on `SpiderFootEvent` (appended to
 `test_spiderfootevent.py`):**
