@@ -3,13 +3,12 @@ import logging
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Optional, Union
 
 from spiderfoot.event_types import EVENT_TYPES, EventType
 
 _log = logging.getLogger("spiderfoot.event")
 
-_EventTypeArg = Union[str, EventType]
+_EventTypeArg = str | EventType
 
 # Fields whose value must remain a 0-100 int across the object's life.
 # The dataclass-generated __init__ only runs validation once; test
@@ -18,15 +17,18 @@ _EventTypeArg = Union[str, EventType]
 _VALIDATED_RANGE_FIELDS = frozenset({"confidence", "visibility", "risk"})
 
 
+# eq=False preserves identity equality and keeps the default __hash__ used
+# when events are used as dict keys / set members in scanner internals.
 @dataclass(slots=True, eq=False)
 class SpiderFootEvent:
     """SpiderFootEvent object representing identified data and associated metadata.
 
     Attributes:
         eventType: Event type, e.g. URL_FORM, RAW_DATA. Accepted as
-            either ``str`` or ``EventType`` at construction; stored
-            internally as whichever type the caller passed (``str``
-            for unregistered types, ``EventType`` for registered ones).
+            either ``str`` or ``EventType`` at construction; stored as
+            ``EventType`` for registered types (regardless of whether
+            the caller passed ``str`` or enum); raw ``str`` for
+            unregistered types (which also emit a warning).
             ``EventType`` is a ``str`` mixin, so string comparisons
             keep working either way.
         data: Event data, e.g. a URL, port number, webpage content.
@@ -49,14 +51,14 @@ class SpiderFootEvent:
     eventType: _EventTypeArg
     data: str
     module: str
-    sourceEvent: Optional["SpiderFootEvent"]
+    sourceEvent: "SpiderFootEvent | None"
     generated: float = field(default_factory=time.time)
     confidence: int = 100
     visibility: int = 100
     risk: int = 0
     sourceEventHash: str = field(init=False, default="")
-    moduleDataSource: Optional[str] = None
-    actualSource: Optional[str] = None
+    moduleDataSource: str | None = None
+    actualSource: str | None = None
     _id: str = field(init=False, repr=False, default="")
 
     def __post_init__(self) -> None:
