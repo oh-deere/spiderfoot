@@ -85,6 +85,215 @@ SQLite schema lives entirely in `spiderfoot/db.py` (tables for scans, instances,
 
 The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by these vars — it's product functionality that feeds the scan UI's "Log" tab.
 
+## Module inventory (audited 2026-04-20)
+
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. The **182** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+
+**Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
+
+**Known gaps (backlog):**
+- **Web search:** Both `sfp_bingsearch` (Microsoft retired the Bing Web Search API in 2025) and the Google Custom Search modules (`sfp_googlesearch`, `sfp_pastebin`) were removed. No surviving module queries a general-purpose web search engine. A replacement (self-hosted SearXNG, DuckDuckGo HTML scrape, or similar) is an open need for OSINT investigations that traverse search engines.
+- **Orphaned event types:** A handful of event types in `spiderfoot/event_types.py` (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec; leaving them in costs nothing at runtime.
+
+### FREE_NOAUTH_UNLIMITED (88)
+
+- sfp_adguard_dns
+- sfp_ahmia
+- sfp_alienvaultiprep
+- sfp_archiveorg
+- sfp_arin
+- sfp_azureblobstorage
+- sfp_bgpview
+- sfp_blockchain
+- sfp_blocklistde
+- sfp_botvrij
+- sfp_callername
+- sfp_cinsscore
+- sfp_cleanbrowsing
+- sfp_cleantalk
+- sfp_cloudflaredns
+- sfp_coinblocker
+- sfp_commoncrawl
+- sfp_crobat_api
+- sfp_crt
+- sfp_crxcavator
+- sfp_cybercrimetracker
+- sfp_debounce
+- sfp_digitaloceanspace
+- sfp_dns_for_family
+- sfp_dnsdumpster
+- sfp_dronebl
+- sfp_duckduckgo
+- sfp_emailformat
+- sfp_emergingthreats
+- sfp_etherscan
+- sfp_flickr
+- sfp_fortinet
+- sfp_github
+- sfp_google_tag_manager
+- sfp_googleobjectstorage
+- sfp_gravatar
+- sfp_greensnow
+- sfp_grep_app
+- sfp_h1nobbdde
+- sfp_hackertarget
+- sfp_isc
+- sfp_keybase
+- sfp_maltiverse
+- sfp_mnemonic
+- sfp_multiproxy
+- sfp_myspace
+- sfp_onioncity
+- sfp_onionsearchengine
+- sfp_openbugbounty
+- sfp_opendns
+- sfp_opennic
+- sfp_openphish
+- sfp_openstreetmap
+- sfp_phishstats
+- sfp_phishtank
+- sfp_psbdmp
+- sfp_punkspider
+- sfp_quad9
+- sfp_reversewhois
+- sfp_ripe
+- sfp_robtex
+- sfp_s3bucket
+- sfp_searchcode
+- sfp_skymem
+- sfp_slideshare
+- sfp_sorbs
+- sfp_spamcop
+- sfp_spamhaus
+- sfp_stevenblack_hosts
+- sfp_sublist3r
+- sfp_surbl
+- sfp_talosintel
+- sfp_threatcrowd
+- sfp_threatfox
+- sfp_threatminer
+- sfp_torch
+- sfp_torexits
+- sfp_trumail
+- sfp_twitter
+- sfp_uceprotect
+- sfp_urlscan
+- sfp_venmo
+- sfp_voipbl
+- sfp_vxvault
+- sfp_wikileaks
+- sfp_wikipediaedits
+- sfp_yandexdns
+- sfp_zoneh
+
+### FREE_NOAUTH_LIMITED (5)
+
+- sfp_abstractapi
+- sfp_botscout
+- sfp_comodo
+- sfp_gleif
+- sfp_stackoverflow
+
+### FREE_AUTH_UNLIMITED (9)
+
+- sfp_abusech
+- sfp_apple_itunes
+- sfp_circllu
+- sfp_dnsgrep
+- sfp_googlesafebrowsing
+- sfp_honeypot
+- sfp_hybrid_analysis
+- sfp_leakix
+- sfp_wigle
+
+### FREE_AUTH_LIMITED (26)
+
+- sfp_abuseipdb
+- sfp_abusix
+- sfp_adblock
+- sfp_alienvault
+- sfp_builtwith
+- sfp_censys
+- sfp_certspotter
+- sfp_fullcontact
+- sfp_fullhunt
+- sfp_googlemaps
+- sfp_hostio
+- sfp_iknowwhatyoudownload
+- sfp_ipapico
+- sfp_ipapicom
+- sfp_ipinfo
+- sfp_ipqualityscore
+- sfp_ipregistry
+- sfp_koodous
+- sfp_metadefender
+- sfp_nameapi
+- sfp_networksdb
+- sfp_pulsedive
+- sfp_securitytrails
+- sfp_socialprofiles
+- sfp_virustotal
+- sfp_xforce
+
+### UNKNOWN / not classified (54)
+
+These modules do not declare a `meta.dataSource.model` (they are local analysis/processing modules — regex extractors, DNS helpers, sslcert, spider, portscan, and the `sfp_tool_*` wrappers around external CLI tools — not external API integrations). They are out of scope for the FREE_* policy but are listed here so future contributors can confirm at a glance that a new module without a `model` field is similarly local in nature.
+
+- sfp_accounts
+- sfp_base64
+- sfp_binstring
+- sfp_bitcoin
+- sfp_company
+- sfp_cookie
+- sfp_countryname
+- sfp_creditcard
+- sfp_crossref
+- sfp_customfeed
+- sfp_dnsbrute
+- sfp_dnscommonsrv
+- sfp_dnsneighbor
+- sfp_dnsraw
+- sfp_dnsresolve
+- sfp_dnszonexfer
+- sfp_email
+- sfp_errors
+- sfp_ethereum
+- sfp_filemeta
+- sfp_hashes
+- sfp_hosting
+- sfp_iban
+- sfp_intfiles
+- sfp_junkfiles
+- sfp_names
+- sfp_pageinfo
+- sfp_pgp
+- sfp_phone
+- sfp_portscan_tcp
+- sfp_similar
+- sfp_social
+- sfp_spider
+- sfp_sslcert
+- sfp_strangeheaders
+- sfp_subdomain_takeover
+- sfp_tldsearch
+- sfp_tool_cmseek
+- sfp_tool_dnstwist
+- sfp_tool_nbtscan
+- sfp_tool_nmap
+- sfp_tool_nuclei
+- sfp_tool_onesixtyone
+- sfp_tool_retirejs
+- sfp_tool_snallygaster
+- sfp_tool_testsslsh
+- sfp_tool_trufflehog
+- sfp_tool_wafw00f
+- sfp_tool_wappalyzer
+- sfp_tool_whatweb
+- sfp_webanalytics
+- sfp_webframework
+- sfp_webserver
+- sfp_whois
+
 ## Conventions to follow
 
 - When adding a module, register the `sfp_*.py` filename as the module name; the class inside must match the filename (the loader uses the filename, not the class). Start from `sfp_template.py` so the meta block is filled in correctly — the UI depends on it.
