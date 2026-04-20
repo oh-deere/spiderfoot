@@ -329,6 +329,29 @@ These modules do not declare a `meta.dataSource.model` (they are local analysis/
 - sfp_webserver
 - sfp_whois
 
+## Web UI
+
+SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestone 1 (2026-04-20) migrated the scan-list page (`/`); all other Mako pages (`/newscan`, `/scaninfo`, `/opts`, etc.) remain unchanged and reachable.
+
+**SPA stack:** Vite + React 19 + TypeScript + TanStack Query + Mantine + React Router. Vitest for unit tests, Playwright for E2E.
+
+**Dev workflow:**
+1. `python3 ./sf.py -l 127.0.0.1:5001` — CherryPy backend + legacy Mako pages.
+2. `cd webui && npm run dev` — Vite dev server on `:5173` with hot reload; proxies non-SPA paths to CherryPy.
+3. Open `http://localhost:5173` in the browser.
+
+**Production build:** `cd webui && npm run build` outputs `webui/dist/`; the Docker image's `ui-build` stage does this automatically. CherryPy serves the built assets from `/static/webui/` and the SPA's `index.html` for any SPA-owned route (list in `_SPA_ROUTES` in `sfwebui.py`).
+
+**Running tests:** `./test/run` from the repo root runs the whole chain — webui build + Vitest + Playwright + flake8 + pytest. Individual commands: `cd webui && npm test -- --run` (Vitest), `cd webui && npm run test:e2e` (Playwright).
+
+**Adding a migrated page** (reference for future milestones):
+1. Build the component in `webui/src/pages/<Foo>Page.tsx` with unit tests at `webui/src/pages/<Foo>Page.test.tsx`.
+2. Add its route to `webui/src/router.tsx`.
+3. Add the path to `_SPA_ROUTES` in `sfwebui.py` and make sure `index()` (or a dedicated handler) serves the SPA shell for it.
+4. Delete the old Mako template + its `@cherrypy.expose` handler.
+5. Add a Playwright E2E spec under `webui/tests/e2e/`.
+6. Remove the corresponding Robot Framework acceptance test if one exists.
+
 ## Conventions to follow
 
 - When adding a module, register the `sfp_*.py` filename as the module name; the class inside must match the filename (the loader uses the filename, not the class). Start from `sfp_template.py` so the meta block is filled in correctly — the UI depends on it.
