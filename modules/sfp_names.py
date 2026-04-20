@@ -103,10 +103,11 @@ class sfp_names(SpiderFootPlugin):
         # For RAW_RIR_DATA, there are only specific modules we
         # expect to see RELEVANT names within.
         if eventName == "RAW_RIR_DATA":
-            if srcModuleName not in ["sfp_builtwith", "sfp_clearbit", "sfp_emailcrawlr",
-                                     "sfp_fullcontact", "sfp_github", "sfp_hunter",
-                                     "sfp_opencorporates", "sfp_slideshare", "sfp_jsonwhoiscom",
-                                     "sfp_twitter", "sfp_gravatar", "sfp_keybase"]:
+            # Historically also filtered: sfp_clearbit, sfp_emailcrawlr, sfp_hunter,
+            # sfp_opencorporates, sfp_jsonwhoiscom (removed in dead-module audit).
+            if srcModuleName not in ["sfp_builtwith", "sfp_fullcontact", "sfp_github",
+                                     "sfp_slideshare", "sfp_twitter", "sfp_gravatar",
+                                     "sfp_keybase"]:
                 self.debug("Ignoring RAW_RIR_DATA from untrusted module.")
                 return
 
