@@ -14,6 +14,7 @@ import html
 import json
 import logging
 import multiprocessing as mp
+import os
 import random
 import string
 import time
@@ -41,6 +42,18 @@ from spiderfoot import __version__
 from spiderfoot.logger import logListenerSetup, logWorkerSetup
 
 mp.set_start_method("spawn", force=True)
+
+# Milestone 1: SPA-owned paths (the SPA's React Router handles them).
+# Each future migrated page adds its path here; when a path is in this
+# set, CherryPy serves the SPA's index.html rather than a Mako handler.
+_SPA_ROUTES = {"/"}
+
+# Absolute path to the built SPA bundle. Vite emits ./webui/dist/ at
+# repo root during build; the Docker image copies it to the same
+# relative location inside the runtime container.
+_SPA_DIST = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "webui", "dist"
+)
 
 
 class SpiderFootWebUi:
@@ -859,7 +872,10 @@ class SpiderFootWebUi:
             ids (str): comma separated list of scan IDs
 
         Returns:
-            str: Scan list page HTML
+            None
+
+        Raises:
+            HTTPRedirect: redirect to the SPA scan list after queuing reruns
         """
         # Snapshot the current configuration to be used by the scan
         cfg = deepcopy(self.config)
@@ -903,8 +919,10 @@ class SpiderFootWebUi:
                 self.log.info("Waiting for the scan to initialize...")
                 time.sleep(1)
 
-        templ = Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
-        return templ.render(rerunscans=True, docroot=self.docroot, pageid="SCANLIST", version=__version__)
+        # scanlist.tmpl was retired in the Milestone 1 UI lift — redirect to
+        # the SPA's scan list, which reflects the newly rerun scans on its
+        # next poll (5s).
+        raise cherrypy.HTTPRedirect(f"{self.docroot}/", status=302)
 
     @cherrypy.expose
     def newscan(self: 'SpiderFootWebUi') -> str:
@@ -960,13 +978,28 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     def index(self: 'SpiderFootWebUi') -> str:
-        """Show scan list page.
+        """Serve the SPA shell for SPA-owned paths.
+
+        Milestone 1: only '/' is SPA-owned. Future migrations add entries
+        to _SPA_ROUTES and this handler serves index.html for each.
 
         Returns:
-            str: Scan list page HTML
+            str: SPA index.html bytes, or a plain HTML fallback page when
+                the bundle is missing.
         """
-        templ = Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
-        return templ.render(pageid='SCANLIST', docroot=self.docroot, version=__version__)
+        index_path = os.path.join(_SPA_DIST, "index.html")
+        if not os.path.isfile(index_path):
+            # Fall back to a plain HTML page if the SPA bundle is missing
+            # (e.g. developer ran the backend without building the UI).
+            return (
+                "<html><body><h1>SpiderFoot</h1>"
+                f"<p>Web UI bundle not found at {_SPA_DIST}. Run "
+                "<code>cd webui &amp;&amp; npm run build</code> "
+                "or use the dev server on port 5173.</p>"
+                "</body></html>"
+            )
+        with open(index_path, encoding="utf-8") as fh:
+            return fh.read()
 
     @cherrypy.expose
     def scaninfo(self: 'SpiderFootWebUi', id: str) -> str:

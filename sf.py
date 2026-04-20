@@ -491,6 +491,13 @@ def start_web_server(sfWebUiConfig: dict, sfConfig: dict, loggingQueue=None) -> 
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.root': f"{os.path.dirname(os.path.abspath(__file__))}/spiderfoot"
+        },
+        '/static/webui': {
+            # SPA bundle emitted by `npm run build`. Served read-only.
+            'tools.staticdir.on': True,
+            'tools.staticdir.dir': 'dist',
+            'tools.staticdir.root': f"{os.path.dirname(os.path.abspath(__file__))}/webui",
+            'tools.staticdir.index': 'index.html',
         }
     }
 
