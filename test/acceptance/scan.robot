@@ -73,14 +73,6 @@ Scan info Log tab should render
     Element Should Be Visible            id:btn-refresh
     Element Should Be Visible            id:btn-download-logs
 
-Scan list page should render
-    Element Should Be Visible            id:scanlist
-    Element Should Be Visible            id:btn-rerun
-    Element Should Be Visible            id:btn-stop
-    Element Should Be Visible            id:btn-refresh
-    Element Should Be Visible            id:btn-export
-    Element Should Be Visible            id:btn-delete
-
 Settings page should render
     Element Should Be Visible            id:savesettingsform
     Element Should Be Visible            id:btn-save-changes
@@ -104,13 +96,8 @@ Scroll To Element
 
 *** Test Cases ***
 Main navigation pages should render correctly
-    Open browser                         ${URL}       ${BROWSER}
-    Click Element                        id:nav-link-newscan
-    Wait Until Page Contains             New Scan    timeout=5s
+    Open browser                         ${URL}/newscan   ${BROWSER}
     New scan page should render
-    Click Element                        id:nav-link-scans
-    Wait Until Page Contains             Started     timeout=5s
-    Scan list page should render
     Click Element                        id:nav-link-settings
     Wait Until Page Contains             Settings    timeout=5s
     Settings page should render
@@ -129,11 +116,6 @@ Scan info page should render correctly
     Scan info Settings tab should render
     Click Element                        id:btn-log
     Scan info Log tab should render
-
-Scan list page should list scans
-    Create a module scan                 test scan list       spiderfoot.net           sfp_countryname
-    Click Element                        id:nav-link-scans
-    Wait Until Page Contains             test scan list       timeout=5s
 
 A sfp_dnsresolve scan should resolve INTERNET_NAME to IP_ADDRESS
     Create a module scan                 dns resolve          spiderfoot.net           sfp_dnsresolve

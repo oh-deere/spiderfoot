@@ -5,8 +5,25 @@
 # Must be run from SpiderFoot root directory; ie:
 # ./test/run
 
+set -e
+
+if [ -d webui ]; then
+    echo "Running webui build + tests ..."
+    (
+        cd webui
+        npm ci
+        npm run build
+        npm test -- --run
+        if ! npx playwright --version >/dev/null 2>&1; then
+            echo "Playwright not installed - install with: cd webui && npx playwright install --with-deps chromium"
+            exit 1
+        fi
+        npm run test:e2e
+    )
+fi
+
 echo Running flake8 ...
-time python3 -m flake8 . --count --show-source --statistics || exit
+time python3 -m flake8 . --count --show-source --statistics
 
 echo Running pytest ...
 time python3 -m pytest -n auto --dist loadfile --ignore=test/integration/modules/ --durations=5 --cov-report html --cov=. .
