@@ -87,15 +87,15 @@ The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by thes
 
 ## Module inventory (audited 2026-04-20)
 
-The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. The **182** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. The **183** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
 
 **Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
 
 **Known gaps (backlog):**
-- **Web search:** Both `sfp_bingsearch` (Microsoft retired the Bing Web Search API in 2025) and the Google Custom Search modules (`sfp_googlesearch`, `sfp_pastebin`) were removed. No surviving module queries a general-purpose web search engine. A replacement (self-hosted SearXNG, DuckDuckGo HTML scrape, or similar) is an open need for OSINT investigations that traverse search engines.
+- **Web search:** Addressed by `sfp_searxng` (2026-04-20) — queries a self-hosted SearXNG instance. Zero-config fallback (`sfp_duckduckgo`) remains on the backlog for users without a SearXNG deployment.
 - **Orphaned event types:** A handful of event types in `spiderfoot/event_types.py` (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec; leaving them in costs nothing at runtime.
 
-### FREE_NOAUTH_UNLIMITED (88)
+### FREE_NOAUTH_UNLIMITED (89)
 
 - sfp_adguard_dns
 - sfp_ahmia
@@ -160,6 +160,7 @@ The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-desi
 - sfp_robtex
 - sfp_s3bucket
 - sfp_searchcode
+- sfp_searxng
 - sfp_skymem
 - sfp_slideshare
 - sfp_sorbs
