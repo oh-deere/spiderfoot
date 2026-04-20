@@ -2,5 +2,4 @@ node_modules/
 dist/
 test-results/
 playwright-report/
-tests/e2e/fixtures/spiderfoot-e2e/
 *.log

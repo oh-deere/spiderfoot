@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+// Runs before 02-empty-state.spec.ts — DO NOT reorder. The filename
+// prefix + playwright.config.ts (workers:1, fullyParallel:false)
+// guarantee ordering; the empty-state spec wipes the DB when it runs.
+
 test.describe('Scan list', () => {
   test('renders all seeded scans with correct statuses', async ({ page }) => {
     await page.goto('/');

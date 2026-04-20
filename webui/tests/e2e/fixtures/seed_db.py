@@ -4,6 +4,7 @@
 Usage:
     python3 seed_db.py <db-path>           # 5 deterministic scans
     python3 seed_db.py <db-path> --empty   # just build the schema, no rows
+    python3 seed_db.py <db-path> --clear   # wipe rows from an existing DB
 
 The schema is created via SpiderFootDb(init=True). The scan timestamps are
 stored in milliseconds (SpiderFootDb stores ``time.time() * 1000``); the
@@ -36,11 +37,23 @@ SCANS = [
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
-        print(f"usage: {argv[0]} <db-path> [--empty]", file=sys.stderr)
+        print(f"usage: {argv[0]} <db-path> [--empty|--clear]", file=sys.stderr)
         return 2
 
     db_path = argv[1]
-    empty = "--empty" in argv[2:]
+    flags = argv[2:]
+
+    if "--clear" in flags:
+        # Wipe rows from an existing, possibly-open DB without rebuilding
+        # the schema. Used by the E2E empty-state spec between tests:
+        # the running sf.py holds the SQLite file, so removing and
+        # re-initialising would race with its connection.
+        db = SpiderFootDb({"__database": db_path})
+        with db.dbhLock:
+            db.dbh.execute("DELETE FROM tbl_scan_instance")
+            db.conn.commit()
+        print(f"Cleared {db_path}")
+        return 0
 
     if os.path.exists(db_path):
         os.remove(db_path)
@@ -49,7 +62,7 @@ def main(argv: list[str]) -> int:
     # init=True creates the full schema on a fresh file.
     db = SpiderFootDb({"__database": db_path}, init=True)
 
-    if empty:
+    if "--empty" in flags:
         print(f"Seeded 0 scans into {db_path}")
         return 0
 
