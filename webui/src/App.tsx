@@ -1,4 +1,6 @@
 import { AppShell, Title } from '@mantine/core';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './router';
 
 export default function App() {
   return (
@@ -7,7 +9,7 @@ export default function App() {
         <Title order={3}>SpiderFoot</Title>
       </AppShell.Header>
       <AppShell.Main>
-        <Title order={4}>Mantine boots</Title>
+        <RouterProvider router={router} />
       </AppShell.Main>
     </AppShell>
   );

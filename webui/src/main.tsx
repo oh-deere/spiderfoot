@@ -11,14 +11,11 @@ import '@mantine/notifications/styles.css';
 import App from './App';
 import { theme } from './theme';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5_000,
-      refetchInterval: 5_000,
-    },
-  },
-});
+// Keep the global default minimal — per-query refetchInterval lives
+// on the hook that needs it (e.g., scan list polls every 5s in
+// pages/ScanListPage.tsx). staleTime is unset so any explicit
+// refetchInterval governs cadence.
+const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
