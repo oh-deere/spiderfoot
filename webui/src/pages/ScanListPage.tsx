@@ -130,6 +130,7 @@ export function ScanListPage() {
                   <ScanStatusBadge status={scan.status} />
                 </Table.Td>
                 <Table.Td>
+                  {/* Plain <a>: full-page reload into Mako /scaninfo until that page migrates. */}
                   <Anchor href={`/scaninfo?id=${scan.guid}`}>
                     {scan.name}
                   </Anchor>
