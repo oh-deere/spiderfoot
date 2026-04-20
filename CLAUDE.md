@@ -87,15 +87,47 @@ The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by thes
 
 ## Module inventory (audited 2026-04-20)
 
-The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. The **183** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). The **190** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
 
 **Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
 
-**Known gaps (backlog):**
-- **Web search:** Addressed by `sfp_searxng` (2026-04-20) — queries a self-hosted SearXNG instance. Zero-config fallback (`sfp_duckduckgo`) remains on the backlog for users without a SearXNG deployment.
-- **Orphaned event types:** A handful of event types in `spiderfoot/event_types.py` (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec; leaving them in costs nothing at runtime.
+**Known gaps / follow-ups (tracked in `docs/superpowers/BACKLOG.md`):**
+- **Orphaned event types:** a handful of event types (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec.
+- **External IP-geolocation modules:** `sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry` are redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend, internal). Cull after a live-scan parity check.
+- **DuckDuckGo scrape fallback:** zero-config search option for users without SearXNG or the OhDeere stack. Backlog.
+- **Typed module metadata registry (Phase 1 item 2):** spec at `docs/superpowers/specs/2026-04-20-typed-module-metadata-design.md` is written, parked before implementation in favor of OhDeere modules. Ready to pick up.
 
-### FREE_NOAUTH_UNLIMITED (89)
+## OhDeere integration
+
+Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster via a shared OAuth2 client helper. All seven silently no-op when credentials are unset, so the modules are safe to ship anywhere.
+
+**Shared helpers:**
+- `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset.
+- `spiderfoot/ohdeere_llm.py` — submit + poll wrapper on top of `ohdeere_client`, tailored to the `ohdeere-llm-gateway` async-serial job queue. `run_prompt()` is blocking and returns the model's response string. Raises `OhDeereLLMTimeout` / `OhDeereLLMFailure` on typed errors.
+
+**Consumer modules (all `FREE_NOAUTH_UNLIMITED` — internal services, user controls quota):**
+
+| Module | Scope | Watches → Emits |
+|---|---|---|
+| `sfp_ohdeere_geoip` | `geoip:read` | `IP_ADDRESS`, `IPV6_ADDRESS` → `COUNTRY_NAME`, `GEOINFO`, `PHYSICAL_COORDINATES`, `BGP_AS_OWNER`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_maps` | `maps:read` | `PHYSICAL_COORDINATES` (reverse-geocode), `PHYSICAL_ADDRESS` (forward-geocode) → `PHYSICAL_ADDRESS`, `PHYSICAL_COORDINATES`, `COUNTRY_NAME`, `GEOINFO`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_wiki` | `wiki:read` | `COMPANY_NAME`, `HUMAN_NAME` → `DESCRIPTION_ABSTRACT`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_search` | `search:read` | `INTERNET_NAME`, `DOMAIN_NAME` → `LINKED_URL_*`, `INTERNET_NAME` (subdomains), `EMAILADDR`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_notification` | `notifications:slack:send` | `ROOT` event + `finish()` hook → no event-bus output; fires Slack pings at scan start + complete |
+| `sfp_ohdeere_llm_summary` | `llm:query` | `ROOT` event + `finish()` hook → one `DESCRIPTION_ABSTRACT` summarizing the whole scan |
+| `sfp_ohdeere_llm_translate` | `llm:query` | `LEAKSITE_CONTENT`, `DARKNET_MENTION_CONTENT`, `RAW_RIR_DATA` → same event types re-emitted with translated content |
+
+**Error contract (all modules):**
+- Credentials unset → silent no-op (matches `sfp_searxng` pattern).
+- `OhDeereAuthError` / `OhDeereServerError` / `OhDeereClientError` → `self.error(...)` + `self.errorState = True`; module stops for the rest of the scan.
+
+**Lifecycle hooks used:**
+- `ROOT` event watch + `handleEvent` no-op — needed for modules that want `finish()` to fire (`sfp_ohdeere_notification`, `sfp_ohdeere_llm_summary`).
+- `finish()` override — `sfp_ohdeere_notification`, `sfp_ohdeere_llm_summary`, `sfp_ohdeere_llm_translate`.
+
+See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
+
+### FREE_NOAUTH_UNLIMITED (96)
 
 - sfp_adguard_dns
 - sfp_ahmia
@@ -143,6 +175,13 @@ The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-desi
 - sfp_mnemonic
 - sfp_multiproxy
 - sfp_myspace
+- sfp_ohdeere_geoip
+- sfp_ohdeere_llm_summary
+- sfp_ohdeere_llm_translate
+- sfp_ohdeere_maps
+- sfp_ohdeere_notification
+- sfp_ohdeere_search
+- sfp_ohdeere_wiki
 - sfp_onioncity
 - sfp_onionsearchengine
 - sfp_openbugbounty
