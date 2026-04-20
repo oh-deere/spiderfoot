@@ -176,3 +176,9 @@ docs/_build/
 
 # Local Claude Code harness state (not project code)
 .claude/
+
+# Web UI
+webui/node_modules/
+webui/dist/
+webui/test-results/
+webui/playwright-report/
