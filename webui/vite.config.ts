@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       // Every path except /static/webui/* proxies to CherryPy during dev.
       // Vite handles static assets; everything else (API, legacy pages) goes through.
-      '^/(?!static/webui/|@vite|src|node_modules).*': {
+      '^/(?!static/webui/|@vite|@id|@fs|src|node_modules).*': {
         target: 'http://127.0.0.1:5001',
         changeOrigin: false,
       },
