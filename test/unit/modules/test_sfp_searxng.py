@@ -65,11 +65,14 @@ class TestModuleSearxng(unittest.TestCase):
 
     def test_happy_path_emits_internal_external_email_subdomain_raw(self):
         sf, module, _ = self._module()
+        module.opts["max_pages"] = 1
         evt = self._domain_event(self._root_event())
         body = {
             "results": [
                 {"url": "https://api.example.com/health", "title": "",
                  "content": "operator contact admin@example.com"},
+                {"url": "https://example.com/root-page", "title": "",
+                 "content": "example.com homepage"},
                 {"url": "https://other.org/mentions-example", "title": "",
                  "content": "example.com was mentioned"},
             ]
@@ -81,14 +84,16 @@ class TestModuleSearxng(unittest.TestCase):
             module.handleEvent(evt)
 
         types_emitted = [e.eventType for e in emissions]
-        self.assertEqual(types_emitted.count("LINKED_URL_INTERNAL"), 1)
+        self.assertEqual(types_emitted.count("LINKED_URL_INTERNAL"), 2)
         self.assertEqual(types_emitted.count("LINKED_URL_EXTERNAL"), 1)
-        self.assertEqual(types_emitted.count("INTERNET_NAME"), 1)  # api.example.com
+        # api.example.com — example.com is the input, NOT re-emitted.
+        self.assertEqual(types_emitted.count("INTERNET_NAME"), 1)
         self.assertEqual(types_emitted.count("EMAILADDR"), 1)
         self.assertEqual(types_emitted.count("RAW_RIR_DATA"), 1)
 
     def test_dedup_same_event_queried_only_once(self):
         sf, module, _ = self._module()
+        module.opts["max_pages"] = 1
         evt = self._domain_event(self._root_event())
         with mock.patch.object(sf, "fetchUrl",
                                return_value=_fetch_ok({"results": []})) as m_fetch, \
@@ -145,6 +150,7 @@ class TestModuleSearxng(unittest.TestCase):
 
     def test_empty_results_emits_only_raw_rir_data(self):
         sf, module, _ = self._module()
+        module.opts["max_pages"] = 1
         evt = self._domain_event(self._root_event())
         emissions = []
         with mock.patch.object(sf, "fetchUrl",
@@ -172,3 +178,37 @@ class TestModuleSearxng(unittest.TestCase):
             module.handleEvent(evt)
         emails = sorted(e.data for e in emissions if e.eventType == "EMAILADDR")
         self.assertEqual(emails, ["bar+baz@other.org", "foo@example.com"])
+
+    def test_errorstate_short_circuits_subsequent_events(self):
+        sf, module, _ = self._module()
+        evt1 = self._domain_event(self._root_event())
+        evt2 = SpiderFootEvent("INTERNET_NAME", "other.example.com", "test_mod", self._root_event())
+        with mock.patch.object(sf, "fetchUrl",
+                               return_value=_fetch_status("500")) as m_fetch, \
+             mock.patch.object(module, "notifyListeners"), \
+             mock.patch.object(module, "error"):
+            module.handleEvent(evt1)
+            module.handleEvent(evt2)
+        # Only the first event's fetch runs; after 500, errorState blocks further fetches.
+        self.assertEqual(m_fetch.call_count, 1)
+        self.assertTrue(module.errorState)
+
+    def test_result_without_url_is_skipped(self):
+        sf, module, _ = self._module()
+        module.opts["max_pages"] = 1
+        evt = self._domain_event(self._root_event())
+        body = {
+            "results": [
+                {"title": "no url field", "content": ""},
+                {"url": "https://api.example.com/foo", "title": "", "content": ""},
+            ]
+        }
+        emissions = []
+        with mock.patch.object(sf, "fetchUrl", return_value=_fetch_ok(body)), \
+             mock.patch.object(module, "notifyListeners",
+                               side_effect=lambda e: emissions.append(e)):
+            module.handleEvent(evt)
+        # Only the second result emits URL-related events; RAW_RIR_DATA still emitted.
+        types = [e.eventType for e in emissions]
+        self.assertEqual(types.count("LINKED_URL_INTERNAL"), 1)
+        self.assertEqual(types.count("RAW_RIR_DATA"), 1)
