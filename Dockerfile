@@ -28,6 +28,16 @@
 #   sudo docker build -t spiderfoot-test --build-arg REQUIREMENTS=test/requirements.txt .
 #   sudo docker run --rm spiderfoot-test -m pytest .
 
+# Build the SPA. Node is only present during this stage — the final
+# runtime image carries only the emitted dist/ assets.
+FROM node:22-slim AS ui-build
+WORKDIR /app
+COPY webui/package.json webui/package-lock.json webui/
+RUN cd webui && npm ci
+COPY webui/ webui/
+RUN cd webui && npm run build
+
+
 FROM python:3.12-slim-bookworm AS build
 ARG REQUIREMENTS=requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -66,6 +76,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chown spiderfoot:spiderfoot $SPIDERFOOT_DATA $SPIDERFOOT_LOGS $SPIDERFOOT_CACHE
 
 COPY . .
+COPY --from=ui-build /app/webui/dist /home/spiderfoot/webui/dist
 COPY --from=build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 

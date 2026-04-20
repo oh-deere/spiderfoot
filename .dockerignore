@@ -16,3 +16,7 @@ spiderfoot.test.db
 __pycache__
 htmlcov/
 docs/
+webui/node_modules/
+webui/dist/
+webui/test-results/
+webui/playwright-report/
