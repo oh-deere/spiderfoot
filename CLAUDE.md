@@ -87,13 +87,12 @@ The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by thes
 
 ## Module inventory (audited 2026-04-20)
 
-The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). The **190** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). Four external IP-geolocation modules (`sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry`) were removed in the same cycle — redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend). `sfp_ipqualityscore` stays — it covers proxy/abuse reputation, not pure geolocation. The **186** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
 
 **Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
 
 **Known gaps / follow-ups (tracked in `docs/superpowers/BACKLOG.md`):**
 - **Orphaned event types:** a handful of event types (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec.
-- **External IP-geolocation modules:** `sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry` are redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend, internal). Cull after a live-scan parity check.
 - **DuckDuckGo scrape fallback:** zero-config search option for users without SearXNG or the OhDeere stack. Backlog.
 - **Typed module metadata registry (Phase 1 item 2):** spec at `docs/superpowers/specs/2026-04-20-typed-module-metadata-design.md` is written, parked before implementation in favor of OhDeere modules. Ready to pick up.
 
@@ -246,7 +245,7 @@ See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 - sfp_leakix
 - sfp_wigle
 
-### FREE_AUTH_LIMITED (26)
+### FREE_AUTH_LIMITED (22)
 
 - sfp_abuseipdb
 - sfp_abusix
@@ -260,11 +259,7 @@ See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 - sfp_googlemaps
 - sfp_hostio
 - sfp_iknowwhatyoudownload
-- sfp_ipapico
-- sfp_ipapicom
-- sfp_ipinfo
 - sfp_ipqualityscore
-- sfp_ipregistry
 - sfp_koodous
 - sfp_metadefender
 - sfp_nameapi

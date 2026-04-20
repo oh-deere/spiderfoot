@@ -17,12 +17,6 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 
 ## Ready for implementation (no spec yet)
 
-### Cull redundant external IP-geolocation modules
-- **What:** remove `sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry` — all four use external free-tier GeoLite2-derived services that `sfp_ohdeere_geoip` now replaces with the same data, no external API keys, and no rate limits we don't control. `sfp_ipqualityscore` stays (it covers proxy/abuse reputation, not pure geolocation).
-- **Pre-requisite:** live-scan parity check with the internal geoip service to confirm output is at least as rich as the 4 external modules (done once, not per scan).
-- **Blocker:** needs operator to run one live scan with `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` set.
-- **Size:** tiny — same pattern as the original dead-module audit: delete 4 `.py` files + 4 unit tests + 4 integration tests + `CLAUDE.md` inventory update.
-
 ### `sfp_duckduckgo` — zero-config search fallback
 - **What:** HTML-scrape module against `html.duckduckgo.com/html/` for users who don't run SearXNG or the OhDeere stack. Same inputs/outputs as `sfp_searxng`.
 - **Blocker:** none.
@@ -108,8 +102,8 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 
 | Urgency | Item |
 |---|---|
-| High | Cull 4 redundant external IP modules (needs live-scan parity) |
-| High | Live-scan OhDeere smoke (operator task) |
+| ~~High~~ Done | ~~Cull 4 redundant external IP modules~~ — shipped after live-scan parity confirmed |
+| ~~High~~ Done | ~~Live-scan OhDeere smoke~~ — passed 2026-04-20 |
 | Medium | Typed module metadata registry (spec ready) |
 | Medium | `sfp_ohdeere_llm_adverse_media` (blocked on Qwen 32B) |
 | Medium | `pybreaker` circuit breaker |
