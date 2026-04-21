@@ -75,14 +75,14 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 **Shipped:**
 - Milestone 1 (2026-04-20) — `/` scan list + full toolchain (Vite + React + Mantine + Vitest + Playwright).
 - Milestone 2 (2026-04-20) — `/newscan` scan creation form + three selection tabs + filterable module list. Retired `clonescan` handler (clone UI deferred).
+- Milestone 3 (2026-04-20) — `/opts` settings page: left-rail navigation, filterable module list, dirty indicator, Import/Export/Reset flows. Extended `/optsraw` with per-option descriptions and per-module metadata; `/savesettings` gained JSON success/error branches.
 
-Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2}-design.md`.
+Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3}-design.md`.
 
 **Remaining Mako pages to migrate** (each its own spec + plan):
 - `/scaninfo?id=<guid>` (`scaninfo.tmpl`, ~905 lines) — the big one. Tabs for events, correlations, graph, log. Likely needs sub-milestones by tab.
-- `/opts` (`opts.tmpl`, ~199 lines) — settings / API keys / global config.
-- `/error` — tiny error page; can ride with the next migration.
-- Clone-scan UX: re-add a Clone action to the scan list menu, backed by a new JSON endpoint that returns the cloned scan's pre-fill payload. Targeted for the milestone that touches `/scaninfo` (natural entry point).
+- Shared chrome (`HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`) — dies with `/scaninfo` in a final sweep.
+- Clone-scan UX: re-add a Clone action to the scan list menu, backed by a new JSON endpoint. Targeted for the milestone that touches `/scaninfo`.
 
 **Retirements triggered by each migration:**
 - Delete the Mako template + its CherryPy handler.

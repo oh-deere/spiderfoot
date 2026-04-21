@@ -331,7 +331,7 @@ These modules do not declare a `meta.dataSource.model` (they are local analysis/
 
 ## Web UI
 
-SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestones 1 and 2 (2026-04-20) migrated `/` (scan list) and `/newscan` (scan creation). Remaining Mako pages (`/scaninfo`, `/opts`, `/error`) are unchanged and reachable.
+SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestones 1–3 (2026-04-20) migrated `/` (scan list), `/newscan` (scan creation), and `/opts` (settings). Remaining Mako pages (`/scaninfo`, shared chrome via `HEADER.tmpl`/`FOOTER.tmpl`/`error.tmpl`) are unchanged and reachable.
 
 **SPA stack:** Vite + React 19 + TypeScript + TanStack Query + Mantine + React Router. Vitest for unit tests, Playwright for E2E.
 
