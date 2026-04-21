@@ -220,6 +220,23 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/startscan?scanname=spiderfoot.net&scantarget=spiderfoot.net&modulelist=doesnotexist&typelist=doesnotexist&usecase=doesnotexist")
         self.assertStatus('303 See Other')
 
+    def test_startscan_json_accept_returns_success_and_scan_id(self):
+        """When Accept: application/json is set and all params are valid,
+        /startscan returns ["SUCCESS", <scanId>] instead of redirecting.
+        """
+        headers = [("Accept", "application/json")]
+        self.getPage(
+            "/startscan?scanname=sparkscan&scantarget=spiderfoot.net"
+            "&modulelist=sfp_countryname&typelist=&usecase=",
+            headers=headers,
+        )
+        self.assertStatus('200 OK')
+        body = json.loads(self.body)
+        self.assertIsInstance(body, list)
+        self.assertEqual(body[0], "SUCCESS")
+        self.assertIsInstance(body[1], str)
+        self.assertTrue(len(body[1]) > 0)
+
     def test_stopscan_invalid_scan_id_returns_404(self):
         self.getPage("/stopscan?id=doesnotexist")
         self.assertStatus('404 Not Found')
