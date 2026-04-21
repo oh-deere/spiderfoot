@@ -1,4 +1,5 @@
 # test_sfwebui.py
+import json
 import os
 import unittest
 
@@ -166,6 +167,19 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/modules")
         self.assertStatus('200 OK')
         self.assertInBody('"name":')
+
+    def test_modules_returns_api_key_flag(self):
+        """Modules JSON should include an api_key bool flag for each module."""
+        self.getPage("/modules")
+        self.assertStatus('200 OK')
+        body = json.loads(self.body)
+        self.assertIsInstance(body, list)
+        self.assertGreater(len(body), 0)
+        first = body[0]
+        self.assertIn('name', first)
+        self.assertIn('descr', first)
+        self.assertIn('api_key', first)
+        self.assertIsInstance(first['api_key'], bool)
 
     def test_ping_returns_200(self):
         self.getPage("/ping")

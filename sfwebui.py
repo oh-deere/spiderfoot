@@ -1304,7 +1304,13 @@ class SpiderFootWebUi:
         for m in modinfo:
             if "__" in m:
                 continue
-            ret.append({'name': m, 'descr': self.config['__modules__'][m]['descr']})
+            opts = self.config['__modules__'][m].get('opts', {})
+            api_key = any('api_key' in k for k in opts)
+            ret.append({
+                'name': m,
+                'descr': self.config['__modules__'][m]['descr'],
+                'api_key': api_key,
+            })
 
         return ret
 
