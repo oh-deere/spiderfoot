@@ -270,12 +270,26 @@ class TestSpiderFootWebUi(unittest.TestCase):
 
     def test_scaninfo(self):
         """
-        Test scaninfo(self, id)
+        Test scaninfo(self, id) — serves SPA shell.
         """
         opts = self.default_options
         opts['__modules__'] = dict()
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
         scan_info = sfwebui.scaninfo("example scan instance")
+        self.assertIsInstance(scan_info, str)
+        self.assertTrue(
+            '<div id="root"></div>' in scan_info or 'Web UI bundle not found' in scan_info,
+            msg=f"Unexpected /scaninfo body: {scan_info[:300]}"
+        )
+
+    def test_scaninfo_legacy(self):
+        """
+        Test scaninfo_legacy(self, id) — renders Mako template.
+        """
+        opts = self.default_options
+        opts['__modules__'] = dict()
+        sfwebui = SpiderFootWebUi(self.web_default_options, opts)
+        scan_info = sfwebui.scaninfo_legacy("example scan instance")
         self.assertIsInstance(scan_info, str)
 
     def test_opts(self):

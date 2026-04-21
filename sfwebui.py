@@ -46,7 +46,7 @@ mp.set_start_method("spawn", force=True)
 # Milestone 1: SPA-owned paths (the SPA's React Router handles them).
 # Each future migrated page adds its path here; when a path is in this
 # set, CherryPy serves the SPA's index.html rather than a Mako handler.
-_SPA_ROUTES = {"/", "/newscan", "/opts"}
+_SPA_ROUTES = {"/", "/newscan", "/opts", "/scaninfo"}
 
 # Absolute path to the built SPA bundle. Vite emits ./webui/dist/ at
 # repo root during build; the Docker image copies it to the same
@@ -995,8 +995,28 @@ class SpiderFootWebUi:
         return self._serve_spa_shell()
 
     @cherrypy.expose
-    def scaninfo(self: 'SpiderFootWebUi', id: str) -> str:
-        """Information about a selected scan.
+    def scaninfo(self: 'SpiderFootWebUi', id: str = None) -> str:
+        """Serve the SPA shell at /scaninfo.
+
+        Milestone 4a moved the scan-detail page into the SPA. The SPA
+        reads the `id` query parameter via React Router's useSearchParams.
+
+        Args:
+            id (str): scan id (consumed by the SPA, not the handler)
+
+        Returns:
+            str: SPA shell HTML.
+        """
+        return self._serve_spa_shell()
+
+    @cherrypy.expose
+    def scaninfo_legacy(self: 'SpiderFootWebUi', id: str) -> str:
+        """Legacy Mako-rendered scan-detail page.
+
+        Temporarily retained during the SPA migration of /scaninfo.
+        Browse/Correlations/Graph tabs on the new SPA page link here
+        for functional fallback. Retired in milestone 4c alongside
+        scaninfo.tmpl and viz.js.
 
         Args:
             id (str): scan id

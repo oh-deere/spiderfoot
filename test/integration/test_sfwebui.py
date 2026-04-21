@@ -116,10 +116,19 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/")
         self.assertStatus('200 OK')
 
-    def test_scaninfo_invalid_scan_returns_200(self):
-        self.getPage("/scaninfo?id=doesnotexist")
+    def test_scaninfo_legacy_invalid_scan_returns_200(self):
+        self.getPage("/scaninfo-legacy?id=doesnotexist")
         self.assertStatus('200 OK')
         self.assertInBody("Scan ID not found.")
+
+    def test_scaninfo_returns_spa_shell(self):
+        self.getPage("/scaninfo?id=doesnotexist")
+        self.assertStatus('200 OK')
+        body = self.body.decode() if isinstance(self.body, bytes) else self.body
+        self.assertTrue(
+            '<div id="root"></div>' in body or 'Web UI bundle not found' in body,
+            msg=f"Unexpected /scaninfo body: {body[:300]}"
+        )
 
     def test_opts_returns_200(self):
         self.getPage("/opts")
