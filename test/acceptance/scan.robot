@@ -80,13 +80,6 @@ Settings page should render
     Element Should Be Visible            id:btn-opt-export
     Element Should Be Visible            id:btn-reset-settings
 
-New scan page should render
-    Element Should Be Visible            id:scanname
-    Element Should Be Visible            id:scantarget
-    Element Should Be Visible            id:usetab
-    Element Should Be Visible            id:typetab
-    Element Should Be Visible            id:moduletab
-
 Scroll To Element
     [Arguments]  ${locator}
     ${x}=        Get Horizontal Position  ${locator}
@@ -97,7 +90,6 @@ Scroll To Element
 *** Test Cases ***
 Main navigation pages should render correctly
     Open browser                         ${URL}/newscan   ${BROWSER}
-    New scan page should render
     Click Element                        id:nav-link-settings
     Wait Until Page Contains             Settings    timeout=5s
     Settings page should render

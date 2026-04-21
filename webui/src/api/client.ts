@@ -16,8 +16,8 @@ export async function fetchJson<T>(
 ): Promise<T> {
   const response = await fetch(path, {
     credentials: 'same-origin',
-    headers: { Accept: 'application/json', ...(init?.headers ?? {}) },
     ...init,
+    headers: { Accept: 'application/json', ...(init?.headers ?? {}) },
   });
   if (!response.ok) {
     const body = await response.text().catch(() => '');
