@@ -25,9 +25,6 @@ from operator import itemgetter
 import cherrypy
 from cherrypy import _cperror
 
-from mako.lookup import TemplateLookup
-from mako.template import Template
-
 import openpyxl
 
 import secure
@@ -59,7 +56,6 @@ _SPA_DIST = os.path.join(
 class SpiderFootWebUi:
     """SpiderFoot web interface."""
 
-    lookup = TemplateLookup(directories=[''])
     defaultConfig = dict()
     config = dict()
     token = None
@@ -157,20 +153,35 @@ class SpiderFootWebUi:
         """
         return ""
 
-    def error_page_404(self: 'SpiderFootWebUi', status: str, message: str, traceback: str, version: str) -> str:
-        """Not found error page 404.
+    def error_page_404(
+        self: 'SpiderFootWebUi',
+        status: str,
+        message: str,
+        traceback: str,
+        version: str,
+    ) -> str:
+        """CherryPy custom 404 handler — plain inline HTML.
 
         Args:
             status (str): HTTP response status code and message
             message (str): Error message
-            traceback (str): Error stack trace
-            version (str): CherryPy version
+            traceback (str): Error stack trace (ignored)
+            version (str): CherryPy version (ignored)
 
         Returns:
             str: HTTP response template
         """
-        templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
-        return templ.render(message='Not Found', docroot=self.docroot, status=status, version=__version__)
+        return (
+            "<!DOCTYPE html>"
+            "<html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>SpiderFoot — Not Found</title></head>"
+            "<body style=\"font-family: sans-serif; padding: 2rem; "
+            "max-width: 48rem; margin: 0 auto;\">"
+            "<h1>Page not found</h1>"
+            f"<p>{html.escape(status)}: {html.escape(message)}</p>"
+            f"<p><a href=\"{self.docroot}/\">← Back to scan list</a></p>"
+            "</body></html>"
+        )
 
     def jsonify_error(self: 'SpiderFootWebUi', status: str, message: str) -> dict:
         """Jsonify error response.
@@ -217,17 +228,30 @@ class SpiderFootWebUi:
             return json.dumps([status, message]).encode('utf-8')
         return json.dumps([status]).encode('utf-8')
 
-    def error(self: 'SpiderFootWebUi', message: str) -> None:
-        """Show generic error page with error message.
+    def error(self: 'SpiderFootWebUi', message: str) -> str:
+        """Render a minimal HTML error page.
+
+        Fallback for legacy non-JSON callers (curl, sfcli form-posts).
+        SPA flows branch on Accept: application/json and never reach here.
 
         Args:
             message (str): error message
 
         Returns:
-            None
+            str: HTML error page.
         """
-        templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
-        return templ.render(message=message, docroot=self.docroot, version=__version__)
+        safe_message = html.escape(message)
+        return (
+            "<!DOCTYPE html>"
+            "<html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>SpiderFoot — Error</title></head>"
+            "<body style=\"font-family: sans-serif; padding: 2rem; "
+            "max-width: 48rem; margin: 0 auto;\">"
+            "<h1>Something went wrong</h1>"
+            f"<p>{safe_message}</p>"
+            f"<p><a href=\"{self.docroot}/\">← Back to scan list</a></p>"
+            "</body></html>"
+        )
 
     def cleanUserInput(self: 'SpiderFootWebUi', inputList: list) -> list:
         """Convert data to HTML entities; except quotes and ampersands.

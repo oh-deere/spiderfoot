@@ -70,8 +70,12 @@ class TestSpiderFootWebUi(unittest.TestCase):
         opts['__modules__'] = dict()
 
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
-        error_page_404 = sfwebui.error_page_404(None, None, None, None)
+        error_page_404 = sfwebui.error_page_404(
+            "404 Not Found", "Nothing matches the given URI", "", "1.0",
+        )
         self.assertIsInstance(error_page_404, str)
+        self.assertIn("Page not found", error_page_404)
+        self.assertIn("Back to scan list", error_page_404)
 
     def test_clean_user_input_should_return_a_list(self):
         opts = self.default_options
@@ -313,6 +317,7 @@ class TestSpiderFootWebUi(unittest.TestCase):
         self.assertEqual(opts_raw[0], 'SUCCESS')
 
     def test_error(self):
+        """Test error(self, message) — returns HTML error page."""
         opts = self.default_options
         opts['__modules__'] = dict()
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
@@ -320,7 +325,9 @@ class TestSpiderFootWebUi(unittest.TestCase):
         message = "example message"
         scan_error = sfwebui.error(message)
         self.assertIsInstance(scan_error, str)
+        self.assertIn("Something went wrong", scan_error)
         self.assertIn("example message", scan_error)
+        self.assertIn("Back to scan list", scan_error)
 
     def test_scandelete_invalid_scanid_should_return_an_error(self):
         """
