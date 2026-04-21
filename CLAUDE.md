@@ -331,7 +331,7 @@ These modules do not declare a `meta.dataSource.model` (they are local analysis/
 
 ## Web UI
 
-SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestones 1–4c (2026-04-20) migrated `/` (scan list), `/newscan` (scan creation), `/opts` (settings), and `/scaninfo` with all six tabs (Status, Info, Log, Browse, Correlations, Graph via @visx/network + d3-force). Shared chrome (`HEADER.tmpl` / `FOOTER.tmpl` / `error.tmpl`, plus `spiderfoot.js` and the legacy `spiderfoot/static/node_modules/` bundle) survives until the final-sweep milestone because `self.error()` still renders Mako HTML for legacy form-post error paths.
+SpiderFoot's UI runs entirely on the React SPA in `webui/`. The original CherryPy + Mako + jQuery + Bootstrap 3 surface has been fully retired (milestones 1–5, 2026-04-20). The SPA owns `/` (scan list), `/newscan` (scan creation + clone prefill via `?clone=<guid>`), `/opts` (settings), and `/scaninfo` with all six tabs (Status, Info, Log, Browse, Correlations, Graph via @visx/network + d3-force). `sfwebui.py` retains ~35 lines of inline-HTML fallback inside `self.error()`, `error_page_404()`, and `_serve_spa_shell()` for legacy non-JSON callers (curl, sfcli, dev-without-build) — analogous to Spring Boot's default error page.
 
 **SPA stack:** Vite + React 19 + TypeScript + TanStack Query + Mantine + React Router. Vitest for unit tests, Playwright for E2E.
 
@@ -344,13 +344,11 @@ SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrat
 
 **Running tests:** `./test/run` from the repo root runs the whole chain — webui build + Vitest + Playwright + flake8 + pytest. Individual commands: `cd webui && npm test -- --run` (Vitest), `cd webui && npm run test:e2e` (Playwright).
 
-**Adding a migrated page** (reference for future milestones):
+**Adding a new SPA page:**
 1. Build the component in `webui/src/pages/<Foo>Page.tsx` with unit tests at `webui/src/pages/<Foo>Page.test.tsx`.
 2. Add its route to `webui/src/router.tsx`.
-3. Add the path to `_SPA_ROUTES` in `sfwebui.py` for documentation, and replace the existing `@cherrypy.expose` handler's body with `return self._serve_spa_shell()`. The helper handles missing-bundle fallback.
-4. Delete the old Mako template + its `@cherrypy.expose` handler.
-5. Add a Playwright E2E spec under `webui/tests/e2e/`.
-6. Remove the corresponding Robot Framework acceptance test if one exists.
+3. Add the path to `_SPA_ROUTES` in `sfwebui.py` for documentation, and add a one-line `@cherrypy.expose` handler: `return self._serve_spa_shell()`.
+4. Add a Playwright E2E spec under `webui/tests/e2e/`.
 
 ## Conventions to follow
 

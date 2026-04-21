@@ -79,17 +79,11 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - Milestone 4a (2026-04-20) — `/scaninfo` SPA shell + Status/Info/Log tabs. Browse/Correlations/Graph tabs render a placeholder linking to the temporarily-retained `/scaninfo-legacy` Mako handler. Zero new JSON endpoints — reuses `/scanstatus`, `/scansummary`, `/scanopts`, `/scanlog`, `/scanexportlogs`, `/stopscan`.
 - Milestone 4b (2026-04-20) — `/scaninfo` Browse + Correlations tabs. Two-view drill-in (event-type list → events, correlations list → events) sharing an `EventList` component that hosts Full/Unique toggle, hide-FP switch, debounced value search, CSV+Excel export, and per-row FP-flip. Zero new JSON endpoints — reuses `/scaneventresults`, `/scaneventresultsunique`, `/search`, `/scancorrelations`, `/scaneventresultexport`, `/resultsetfp`.
 - Milestone 4c (2026-04-20) — `/scaninfo` Graph tab. React renderer on `@visx/network` + `d3-force` with pan/zoom, PNG+GEXF export, and a >500-node fallback that points at the GEXF download for external graph tools. Retires `scaninfo_legacy` handler, `scaninfo.tmpl` (905 lines), `viz.js` (387 lines), and HEADER.tmpl's viz.js reference. `/scaninfo-legacy` now returns 404.
+- Milestone 5 (2026-04-20) — final sweep. Retires HEADER.tmpl, FOOTER.tmpl, error.tmpl, spiderfoot.js, spiderfoot.css, dark.css, spiderfoot/static/node_modules/ (jquery, bootstrap3, d3, sigma, tablesorter, alertifyjs), spiderfoot/static/img/, and the legacy /static CherryPy mount. Converts self.error() + error_page_404() to inline HTML (no Mako). Adds Clone-scan UX: new GET /clonescan JSON endpoint, NewScanPage reads ?clone=<guid> and seeds form state, ScanListPage row menu gains a Clone action. Closes the UI retirement.
 
-Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c}-design.md`.
+Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}-design.md`.
 
-**Remaining Mako pages to migrate** (each its own spec + plan):
-- Final sweep: retires `HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`, `spiderfoot.js`, legacy CSS (`spiderfoot.css` / `dark.css`), `spiderfoot/static/node_modules/` (jquery, bootstrap3, d3, sigma, tablesorter, alertifyjs), the Mako TemplateLookup + imports in sfwebui.py, the `self.error()` helper (convert to SPA route or static HTML), and the legacy `/static` CherryPy mount. Also folds in the Clone-scan UX (scan list menu + new JSON endpoint).
-
-**Retirements triggered by each migration:**
-- Delete the Mako template + its CherryPy handler.
-- Remove the corresponding Robot Framework acceptance test if any (`test/acceptance/scan.robot`).
-- Add the path to `_SPA_ROUTES` in `sfwebui.py`.
-- Add Playwright coverage for the new page under `webui/tests/e2e/`.
+**UI modernization complete.** No Mako templates remain.
 
 **Smaller follow-ups (no spec needed yet):**
 - Pin Node base image to a specific patch version (`node:22.X.Y-slim`) for Docker build reproducibility. Currently floats on `node:22-slim` — matches the pattern of `python:3.12-slim-bookworm` but both are worth tightening.
