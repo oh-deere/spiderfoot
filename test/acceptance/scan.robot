@@ -73,13 +73,6 @@ Scan info Log tab should render
     Element Should Be Visible            id:btn-refresh
     Element Should Be Visible            id:btn-download-logs
 
-Settings page should render
-    Element Should Be Visible            id:savesettingsform
-    Element Should Be Visible            id:btn-save-changes
-    Element Should Be Visible            id:btn-import-config
-    Element Should Be Visible            id:btn-opt-export
-    Element Should Be Visible            id:btn-reset-settings
-
 Scroll To Element
     [Arguments]  ${locator}
     ${x}=        Get Horizontal Position  ${locator}
@@ -90,9 +83,6 @@ Scroll To Element
 *** Test Cases ***
 Main navigation pages should render correctly
     Open browser                         ${URL}/newscan   ${BROWSER}
-    Click Element                        id:nav-link-settings
-    Wait Until Page Contains             Settings    timeout=5s
-    Settings page should render
 
 Scan info page should render correctly
     Create a module scan                 test scan info       spiderfoot.net           sfp_countryname

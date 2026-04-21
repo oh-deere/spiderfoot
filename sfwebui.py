@@ -1021,6 +1021,9 @@ class SpiderFootWebUi:
         query param (legacy Mako redirect marker) is ignored; the SPA
         surfaces save success via a Mantine notification.
 
+        Args:
+            updated (str): Legacy Mako redirect marker, ignored by the SPA.
+
         Returns:
             str: SPA shell HTML.
         """
