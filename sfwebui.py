@@ -1050,7 +1050,31 @@ class SpiderFootWebUi:
                             continue
                         ret["module." + mod + "." + mo] = self.config['__modules__'][mod]['opts'][mo]
 
-        return ['SUCCESS', {'token': self.token, 'data': ret}]
+        # Per-option descriptions, flat keyed to match `data`.
+        descs: dict = {}
+        global_descs = self.config.get('__globaloptdescs__', {})
+        for opt, desc in global_descs.items():
+            descs["global." + opt] = desc
+        for mod in self.config.get('__modules__', {}):
+            mod_optdescs = self.config['__modules__'][mod].get('optdescs', {}) or {}
+            for opt, desc in mod_optdescs.items():
+                if opt.startswith('_'):
+                    continue
+                descs[f"module.{mod}.{opt}"] = desc
+
+        # Per-module metadata: name, descr, cats, labels, meta.
+        modules: dict = {}
+        for mod in sorted(self.config.get('__modules__', {}).keys()):
+            m = self.config['__modules__'][mod]
+            modules[mod] = {
+                'name': m.get('name', mod),
+                'descr': m.get('descr', ''),
+                'cats': m.get('cats') or [],
+                'labels': m.get('labels') or [],
+                'meta': m.get('meta') or {},
+            }
+
+        return ['SUCCESS', {'token': self.token, 'data': ret, 'descs': descs, 'modules': modules}]
 
     @cherrypy.expose
     @cherrypy.tools.json_out()

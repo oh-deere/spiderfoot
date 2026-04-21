@@ -142,6 +142,27 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/optsraw")
         self.assertStatus('200 OK')
 
+    def test_optsraw_returns_descs_and_modules(self):
+        """After milestone 3, /optsraw includes per-option descs and
+        per-module meta so the SPA renders without a second fetch.
+        """
+        self.getPage("/optsraw")
+        self.assertStatus('200 OK')
+        body = json.loads(self.body)
+        self.assertIsInstance(body, list)
+        self.assertEqual(body[0], "SUCCESS")
+        payload = body[1]
+        self.assertIn('token', payload)
+        self.assertIn('data', payload)
+        self.assertIn('descs', payload)
+        self.assertIn('modules', payload)
+        self.assertIsInstance(payload['descs'], dict)
+        self.assertIsInstance(payload['modules'], dict)
+        # At least one module meta should include the expected shape.
+        first_mod = next(iter(payload['modules'].values()))
+        for key in ('name', 'descr', 'cats', 'labels', 'meta'):
+            self.assertIn(key, first_mod)
+
     def test_scandelete_invalid_scan_id_returns_404(self):
         self.getPage("/scandelete?id=doesnotexist")
         self.assertStatus('404 Not Found')
