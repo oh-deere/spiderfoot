@@ -861,6 +861,36 @@ class SpiderFootWebUi:
         return ret
 
     @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def clonescan(self: 'SpiderFootWebUi', id: str) -> dict:
+        """Return prefill data for cloning a scan into /newscan.
+
+        Args:
+            id (str): scan ID to clone
+
+        Returns:
+            dict: { scanName, scanTarget, modulelist, typelist, usecase }
+        """
+        dbh = SpiderFootDb(self.config)
+        info = dbh.scanInstanceGet(id)
+        if not info:
+            return self.jsonify_error('404', f"Scan {id} does not exist")
+        scan_config = dbh.scanConfigGet(id)
+        if not scan_config:
+            return self.jsonify_error('404', f"Scan {id} has no config")
+        module_list = scan_config.get('_modulesenabled', '').split(',')
+        filtered_modules = [
+            m for m in module_list if m and m != 'sfp__stor_stdout'
+        ]
+        return {
+            'scanName': info[0],
+            'scanTarget': info[1],
+            'modulelist': filtered_modules,
+            'typelist': [],
+            'usecase': '',
+        }
+
+    @cherrypy.expose
     def rerunscan(self: 'SpiderFootWebUi', id: str) -> None:
         """Rerun a scan.
 

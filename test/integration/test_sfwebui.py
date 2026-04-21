@@ -101,6 +101,14 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.assertStatus('200 OK')
         self.assertInBody("Invalid scan ID.")
 
+    def test_clonescan_unknown_scan_returns_404(self):
+        """/clonescan returns JSON 404 for unknown scan IDs."""
+        self.getPage("/clonescan?id=doesnotexist")
+        self.assertStatus('404 Not Found')
+        body = json.loads(self.body)
+        self.assertEqual(body['error']['http_status'], '404')
+        self.assertIn('does not exist', body['error']['message'])
+
     def test_newscan_returns_200(self):
         self.getPage("/newscan")
         self.assertStatus('200 OK')
