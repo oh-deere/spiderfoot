@@ -26,3 +26,18 @@ export type Scan = {
   eventCount: number;
   riskMatrix: RiskMatrix;
 };
+
+export type Module = {
+  name: string;
+  descr: string;
+  api_key: boolean;
+};
+
+export type EventType = {
+  id: string;
+  label: string;
+};
+
+export type SelectionMode = 'usecase' | 'type' | 'module';
+
+export type UseCase = 'all' | 'Footprint' | 'Investigate' | 'Passive';

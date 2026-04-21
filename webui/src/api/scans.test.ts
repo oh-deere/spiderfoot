@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
-import { listScans, deleteScan } from './scans';
+import { listScans, deleteScan, startScan } from './scans';
 import { ApiError } from './client';
 
 describe('listScans', () => {
@@ -126,5 +126,85 @@ describe('deleteScan', () => {
       new Response('{"error":"scan is running"}', { status: 400 }),
     );
     await expect(deleteScan('abc')).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('startScan', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('returns the scanId on SUCCESS response', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['SUCCESS', 'abc-guid']), { status: 200 }),
+    );
+    const scanId = await startScan({
+      scanName: 'test',
+      scanTarget: 'example.com',
+      mode: 'usecase',
+      usecase: 'all',
+      moduleList: [],
+      typeList: [],
+    });
+    expect(scanId).toBe('abc-guid');
+  });
+
+  it('throws the server message on ERROR response', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['ERROR', 'Unrecognised target type.']), { status: 200 }),
+    );
+    await expect(
+      startScan({
+        scanName: 'test',
+        scanTarget: 'not-a-real-target',
+        mode: 'usecase',
+        usecase: 'all',
+        moduleList: [],
+        typeList: [],
+      }),
+    ).rejects.toThrow('Unrecognised target type.');
+  });
+
+  it('sends module mode with modulelist populated and other lists empty', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['SUCCESS', 'abc']), { status: 200 }),
+    );
+    await startScan({
+      scanName: 't',
+      scanTarget: 'x',
+      mode: 'module',
+      usecase: 'all',
+      moduleList: ['sfp_alpha', 'sfp_beta'],
+      typeList: [],
+    });
+    const [, init] = (globalThis.fetch as Mock).mock.calls[0];
+    const body = new URLSearchParams(init.body);
+    expect(body.get('modulelist')).toBe('sfp_alpha,sfp_beta');
+    expect(body.get('typelist')).toBe('');
+    expect(body.get('usecase')).toBe('');
+  });
+
+  it('sends type mode with typelist prefixed "type_" and other lists empty', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['SUCCESS', 'abc']), { status: 200 }),
+    );
+    await startScan({
+      scanName: 't',
+      scanTarget: 'x',
+      mode: 'type',
+      usecase: 'all',
+      moduleList: [],
+      typeList: ['DOMAIN_NAME', 'IP_ADDRESS'],
+    });
+    const [, init] = (globalThis.fetch as Mock).mock.calls[0];
+    const body = new URLSearchParams(init.body);
+    expect(body.get('typelist')).toBe('type_DOMAIN_NAME,type_IP_ADDRESS');
+    expect(body.get('modulelist')).toBe('');
   });
 });

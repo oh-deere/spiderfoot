@@ -33,3 +33,41 @@ export async function deleteScan(guid: string): Promise<void> {
     method: 'GET',
   });
 }
+
+export type StartScanParams = {
+  scanName: string;
+  scanTarget: string;
+  mode: import('../types').SelectionMode;
+  usecase: import('../types').UseCase;
+  moduleList: string[];
+  typeList: string[];
+};
+
+export async function startScan(params: StartScanParams): Promise<string> {
+  const body = new URLSearchParams();
+  body.set('scanname', params.scanName);
+  body.set('scantarget', params.scanTarget);
+  body.set(
+    'modulelist',
+    params.mode === 'module' ? params.moduleList.join(',') : '',
+  );
+  body.set(
+    'typelist',
+    params.mode === 'type' ? params.typeList.map((t) => `type_${t}`).join(',') : '',
+  );
+  body.set('usecase', params.mode === 'usecase' ? params.usecase : '');
+
+  const result = await fetchJson<[string, string]>('/startscan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+
+  if (!Array.isArray(result) || result.length < 2) {
+    throw new Error(`Malformed /startscan response: ${JSON.stringify(result)}`);
+  }
+  if (result[0] !== 'SUCCESS') {
+    throw new Error(result[1] ?? 'Unknown error starting scan');
+  }
+  return result[1];
+}
