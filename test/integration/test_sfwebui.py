@@ -116,11 +116,6 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/")
         self.assertStatus('200 OK')
 
-    def test_scaninfo_legacy_invalid_scan_returns_200(self):
-        self.getPage("/scaninfo-legacy?id=doesnotexist")
-        self.assertStatus('200 OK')
-        self.assertInBody("Scan ID not found.")
-
     def test_scaninfo_returns_spa_shell(self):
         self.getPage("/scaninfo?id=doesnotexist")
         self.assertStatus('200 OK')

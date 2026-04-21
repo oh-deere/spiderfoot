@@ -282,16 +282,6 @@ class TestSpiderFootWebUi(unittest.TestCase):
             msg=f"Unexpected /scaninfo body: {scan_info[:300]}"
         )
 
-    def test_scaninfo_legacy(self):
-        """
-        Test scaninfo_legacy(self, id) — renders Mako template.
-        """
-        opts = self.default_options
-        opts['__modules__'] = dict()
-        sfwebui = SpiderFootWebUi(self.web_default_options, opts)
-        scan_info = sfwebui.scaninfo_legacy("example scan instance")
-        self.assertIsInstance(scan_info, str)
-
     def test_opts(self):
         opts = self.default_options
         opts['__modules__'] = dict()

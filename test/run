@@ -11,7 +11,9 @@ if [ -d webui ]; then
     echo "Running webui build + tests ..."
     (
         cd webui
-        npm ci
+        # --legacy-peer-deps: @visx/network declares React 16/17/18 peers only;
+        # the repo is on React 19. Same flag used in the deps commit.
+        npm ci --legacy-peer-deps
         npm run build
         npm test -- --run
         if ! npx playwright --version >/dev/null 2>&1; then

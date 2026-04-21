@@ -726,7 +726,13 @@ class SpiderFootWebUi:
         root = scan[1]
 
         if gexf == "0":
-            return SpiderFootHelpers.buildGraphJson([root], data)
+            # buildGraphJson raises ValueError on empty data; the SPA's
+            # GraphTab expects an empty {nodes:[], edges:[]} object and
+            # renders its own empty-state Alert from that.
+            cherrypy.response.headers['Content-Type'] = "application/json"
+            if not data:
+                return json.dumps({"nodes": [], "edges": []}).encode('utf-8')
+            return SpiderFootHelpers.buildGraphJson([root], data).encode('utf-8')
 
         if not scan_name:
             fname = "SpiderFoot.gexf"
@@ -1008,30 +1014,6 @@ class SpiderFootWebUi:
             str: SPA shell HTML.
         """
         return self._serve_spa_shell()
-
-    @cherrypy.expose
-    def scaninfo_legacy(self: 'SpiderFootWebUi', id: str) -> str:
-        """Legacy Mako-rendered scan-detail page.
-
-        Temporarily retained during the SPA migration of /scaninfo.
-        Browse/Correlations/Graph tabs on the new SPA page link here
-        for functional fallback. Retired in milestone 4c alongside
-        scaninfo.tmpl and viz.js.
-
-        Args:
-            id (str): scan id
-
-        Returns:
-            str: scan info page HTML
-        """
-        dbh = SpiderFootDb(self.config)
-        res = dbh.scanInstanceGet(id)
-        if res is None:
-            return self.error("Scan ID not found.")
-
-        templ = Template(filename='spiderfoot/templates/scaninfo.tmpl', lookup=self.lookup, input_encoding='utf-8')
-        return templ.render(id=id, name=html.escape(res[0]), status=res[5], docroot=self.docroot, version=__version__,
-                            pageid="SCANLIST")
 
     @cherrypy.expose
     def opts(self: 'SpiderFootWebUi', updated: str = None) -> str:
