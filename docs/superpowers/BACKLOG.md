@@ -76,13 +76,14 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - Milestone 1 (2026-04-20) — `/` scan list + full toolchain (Vite + React + Mantine + Vitest + Playwright).
 - Milestone 2 (2026-04-20) — `/newscan` scan creation form + three selection tabs + filterable module list. Retired `clonescan` handler (clone UI deferred).
 - Milestone 3 (2026-04-20) — `/opts` settings page: left-rail navigation, filterable module list, dirty indicator, Import/Export/Reset flows. Extended `/optsraw` with per-option descriptions and per-module metadata; `/savesettings` gained JSON success/error branches.
+- Milestone 4a (2026-04-20) — `/scaninfo` SPA shell + Status/Info/Log tabs. Browse/Correlations/Graph tabs render a placeholder linking to the temporarily-retained `/scaninfo-legacy` Mako handler. Zero new JSON endpoints — reuses `/scanstatus`, `/scansummary`, `/scanopts`, `/scanlog`, `/scanexportlogs`, `/stopscan`.
 
-Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3}-design.md`.
+Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a}-design.md`.
 
 **Remaining Mako pages to migrate** (each its own spec + plan):
-- `/scaninfo?id=<guid>` (`scaninfo.tmpl`, ~905 lines) — the big one. Tabs for events, correlations, graph, log. Likely needs sub-milestones by tab.
-- Shared chrome (`HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`) — dies with `/scaninfo` in a final sweep.
-- Clone-scan UX: re-add a Clone action to the scan list menu, backed by a new JSON endpoint. Targeted for the milestone that touches `/scaninfo`.
+- `/scaninfo` — Browse + Correlations tabs (milestone 4b).
+- `/scaninfo` — Graph tab + `viz.js` replacement (milestone 4c). Picks a React-native graph library (react-flow / cytoscape / keep sigma wrapped).
+- Final sweep: retires `/scaninfo-legacy`, `scaninfo.tmpl`, `HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`, `spiderfoot.js`, legacy CSS, and `spiderfoot/static/node_modules/`. Also folds in the Clone-scan UX (scan list menu + new JSON endpoint).
 
 **Retirements triggered by each migration:**
 - Delete the Mako template + its CherryPy handler.
