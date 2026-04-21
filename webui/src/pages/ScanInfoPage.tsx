@@ -21,6 +21,8 @@ import { PlaceholderTab } from './scaninfo/PlaceholderTab';
 import { StatusTab } from './scaninfo/StatusTab';
 import { InfoTab } from './scaninfo/InfoTab';
 import { LogTab } from './scaninfo/LogTab';
+import { BrowseTab } from './scaninfo/BrowseTab';
+import { CorrelationsTab } from './scaninfo/CorrelationsTab';
 
 type TabKey =
   | 'status'
@@ -155,10 +157,10 @@ export function ScanInfoPage() {
           <StatusTab id={id} status={status} />
         </Tabs.Panel>
         <Tabs.Panel value="correlations" pt="md">
-          <PlaceholderTab tabLabel="Correlations" scanId={id} />
+          <CorrelationsTab id={id} />
         </Tabs.Panel>
         <Tabs.Panel value="browse" pt="md">
-          <PlaceholderTab tabLabel="Browse" scanId={id} />
+          <BrowseTab id={id} />
         </Tabs.Panel>
         <Tabs.Panel value="graph" pt="md">
           <PlaceholderTab tabLabel="Graph" scanId={id} />

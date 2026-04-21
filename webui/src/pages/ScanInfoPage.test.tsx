@@ -96,15 +96,15 @@ describe('ScanInfoPage', () => {
     expect(screen.queryByRole('button', { name: 'Abort' })).not.toBeInTheDocument();
   });
 
-  it('shows Abort button while running and switching to Correlations tab shows the placeholder with legacy link', async () => {
+  it('shows Abort button while running and switching to the Graph tab shows the placeholder with legacy link', async () => {
     mockStatus('RUNNING');
     renderAt('/scaninfo?id=abc');
     await screen.findByRole('heading', { level: 2, name: 'my-scan' });
     expect(screen.getByRole('button', { name: 'Abort' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Correlations' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Graph' }));
     const legacyLink = await screen.findByRole('link', {
-      name: /Open legacy Correlations view/,
+      name: /Open legacy Graph view/,
     });
     expect(legacyLink).toHaveAttribute('href', '/scaninfo-legacy?id=abc');
   });
