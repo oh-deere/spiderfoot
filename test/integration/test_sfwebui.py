@@ -103,13 +103,13 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
     def test_newscan_returns_200(self):
         self.getPage("/newscan")
         self.assertStatus('200 OK')
-        self.assertInBody("Scan Name")
-        self.assertInBody("Scan Target")
-
-    def test_clonescan(self):
-        self.getPage("/clonescan?id=doesnotexist")
-        self.assertStatus('200 OK')
-        self.assertInBody("Invalid scan ID.")
+        # /newscan now serves the SPA shell. Either the built bundle
+        # (real build) or the dev-fallback page should appear.
+        body = self.body.decode() if isinstance(self.body, bytes) else self.body
+        self.assertTrue(
+            '<div id="root"></div>' in body or 'Web UI bundle not found' in body,
+            msg=f"Unexpected /newscan body: {body[:300]}"
+        )
 
     def test_index_returns_200(self):
         self.getPage("/")

@@ -258,16 +258,6 @@ class TestSpiderFootWebUi(unittest.TestCase):
         """
         self.assertEqual('TBD', 'TBD')
 
-    def test_clonescan(self):
-        """
-        Test clonescan(self, id)
-        """
-        opts = self.default_options
-        opts['__modules__'] = dict()
-        sfwebui = SpiderFootWebUi(self.web_default_options, opts)
-        clone_scan = sfwebui.clonescan("example scan instance")
-        self.assertIsInstance(clone_scan, str)
-
     def test_index(self):
         """
         Test index(self)

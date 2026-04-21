@@ -46,7 +46,7 @@ mp.set_start_method("spawn", force=True)
 # Milestone 1: SPA-owned paths (the SPA's React Router handles them).
 # Each future migrated page adds its path here; when a path is in this
 # set, CherryPy serves the SPA's index.html rather than a Mako handler.
-_SPA_ROUTES = {"/"}
+_SPA_ROUTES = {"/", "/newscan"}
 
 # Absolute path to the built SPA bundle. Vite emits ./webui/dist/ at
 # repo root during build; the Docker image copies it to the same
@@ -926,80 +926,47 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     def newscan(self: 'SpiderFootWebUi') -> str:
-        """Configure a new scan.
+        """Serve the SPA shell at /newscan.
+
+        Milestone 2 moved the scan-creation form into the SPA. See
+        webui/src/pages/NewScanPage.tsx.
 
         Returns:
-            str: New scan page HTML
+            str: SPA shell HTML.
         """
-        dbh = SpiderFootDb(self.config)
-        types = dbh.eventTypes()
-        templ = Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
-        return templ.render(pageid='NEWSCAN', types=types, docroot=self.docroot,
-                            modules=self.config['__modules__'], scanname="",
-                            selectedmods="", scantarget="", version=__version__)
+        return self._serve_spa_shell()
 
-    @cherrypy.expose
-    def clonescan(self: 'SpiderFootWebUi', id: str) -> str:
-        """Clone an existing scan (pre-selected options in the newscan page).
+    def _serve_spa_shell(self) -> str:
+        """Serve the SPA's index.html shell, or a dev-friendly fallback
+        if the Vite bundle is missing.
 
-        Args:
-            id (str): scan ID to clone
+        Shared by every SPA-owned route handler. Adding a new SPA page
+        is `return self._serve_spa_shell()` in the route's @cherrypy.expose
+        method.
 
         Returns:
-            str: New scan page HTML pre-populated with options from cloned scan.
-        """
-        dbh = SpiderFootDb(self.config)
-        types = dbh.eventTypes()
-        info = dbh.scanInstanceGet(id)
-
-        if not info:
-            return self.error("Invalid scan ID.")
-
-        scanconfig = dbh.scanConfigGet(id)
-        scanname = info[0]
-        scantarget = info[1]
-        targetType = None
-
-        if scanname == "" or scantarget == "" or len(scanconfig) == 0:
-            return self.error("Something went wrong internally.")
-
-        targetType = SpiderFootHelpers.targetTypeFromString(scantarget)
-        if targetType is None:
-            # It must be a name, so wrap quotes around it
-            scantarget = "&quot;" + scantarget + "&quot;"
-
-        modlist = scanconfig['_modulesenabled'].split(',')
-
-        templ = Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
-        return templ.render(pageid='NEWSCAN', types=types, docroot=self.docroot,
-                            modules=self.config['__modules__'], selectedmods=modlist,
-                            scanname=str(scanname),
-                            scantarget=str(scantarget), version=__version__)
-
-    @cherrypy.expose
-    def index(self: 'SpiderFootWebUi') -> str:
-        """Serve the SPA shell for SPA-owned paths.
-
-        Milestone 1: only '/' is SPA-owned. Future migrations add entries
-        to _SPA_ROUTES and this handler serves index.html for each.
-
-        Returns:
-            str: SPA index.html bytes, or a plain HTML fallback page when
-                the bundle is missing.
+            str: HTML content.
         """
         index_path = os.path.join(_SPA_DIST, "index.html")
         if not os.path.isfile(index_path):
-            # Fall back to a plain HTML page if the SPA bundle is missing
-            # (e.g. developer ran the backend without building the UI).
             return (
-                "<html><body><h1>SpiderFoot</h1>"
+                f"<html><body><h1>SpiderFoot</h1>"
                 f"<p>Web UI bundle not found at {_SPA_DIST}. Run "
-                "<code>cd webui &amp;&amp; npm run build</code> "
-                "or use the dev server on port 5173.</p>"
-                "</body></html>"
+                f"<code>cd webui &amp;&amp; npm run build</code> "
+                f"or use the dev server on port 5173.</p>"
+                f"</body></html>"
             )
         with open(index_path, encoding="utf-8") as fh:
             return fh.read()
+
+    @cherrypy.expose
+    def index(self: 'SpiderFootWebUi') -> str:
+        """Serve the SPA shell at /.
+
+        Returns:
+            str: SPA shell HTML.
+        """
+        return self._serve_spa_shell()
 
     @cherrypy.expose
     def scaninfo(self: 'SpiderFootWebUi', id: str) -> str:
