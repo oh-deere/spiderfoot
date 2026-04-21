@@ -89,7 +89,7 @@ export type ScanSummaryRow = {
 export type ScanOptsPayload = {
   meta: string[];
   config: Record<string, unknown>;
-  configDesc: Record<string, string>;
+  configdesc: Record<string, string>;  // matches backend key (sfwebui.py:815)
 };
 
 export type ScanLogEntry = {
