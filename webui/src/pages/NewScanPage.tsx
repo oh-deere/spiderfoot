@@ -58,6 +58,9 @@ export function NewScanPage() {
   const submitMutation = useMutation({
     mutationFn: startScan,
     onSuccess: (scanId) => {
+      // Hard redirect: /scaninfo is still a legacy Mako page outside
+      // the SPA shell. Replace with useNavigate() once /scaninfo is
+      // migrated (tracked in BACKLOG.md).
       window.location.href = `/scaninfo?id=${scanId}`;
     },
   });
@@ -86,8 +89,8 @@ export function NewScanPage() {
           <Button
             size="xs"
             onClick={() => {
-              modulesQuery.refetch();
-              typesQuery.refetch();
+              void modulesQuery.refetch();
+              void typesQuery.refetch();
             }}
           >
             Retry
