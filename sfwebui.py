@@ -46,7 +46,7 @@ mp.set_start_method("spawn", force=True)
 # Milestone 1: SPA-owned paths (the SPA's React Router handles them).
 # Each future migrated page adds its path here; when a path is in this
 # set, CherryPy serves the SPA's index.html rather than a Mako handler.
-_SPA_ROUTES = {"/", "/newscan"}
+_SPA_ROUTES = {"/", "/newscan", "/opts"}
 
 # Absolute path to the built SPA bundle. Vite emits ./webui/dist/ at
 # repo root during build; the Docker image copies it to the same
@@ -989,18 +989,16 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     def opts(self: 'SpiderFootWebUi', updated: str = None) -> str:
-        """Show module and global settings page.
+        """Serve the SPA shell at /opts.
 
-        Args:
-            updated (str): scan options were updated successfully
+        Milestone 3 moved the settings form into the SPA. The `updated`
+        query param (legacy Mako redirect marker) is ignored; the SPA
+        surfaces save success via a Mantine notification.
 
         Returns:
-            str: scan options page HTML
+            str: SPA shell HTML.
         """
-        templ = Template(filename='spiderfoot/templates/opts.tmpl', lookup=self.lookup)
-        self.token = random.SystemRandom().randint(0, 99999999)
-        return templ.render(opts=self.config, pageid='SETTINGS', token=self.token, version=__version__,
-                            updated=updated, docroot=self.docroot)
+        return self._serve_spa_shell()
 
     @cherrypy.expose
     def optsexport(self: 'SpiderFootWebUi', pattern: str = None) -> str:

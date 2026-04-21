@@ -285,7 +285,13 @@ class TestSpiderFootWebUi(unittest.TestCase):
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
         opts_page = sfwebui.opts()
         self.assertIsInstance(opts_page, str)
-        self.assertIn('Settings', opts_page)
+        # Milestone 3: /opts now serves the SPA shell rather than the
+        # Mako settings template. Assert SPA-shell markers (same pattern
+        # as the milestone-2 integration test on /newscan).
+        self.assertTrue(
+            '<div id="root"></div>' in opts_page or 'Web UI bundle not found' in opts_page,
+            msg=f"Unexpected opts() body: {opts_page[:300]}"
+        )
 
     def test_optsexport_should_return_a_string(self):
         opts = self.default_options

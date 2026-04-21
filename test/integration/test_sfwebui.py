@@ -121,10 +121,14 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.assertStatus('200 OK')
         self.assertInBody("Scan ID not found.")
 
-    @unittest.skip("todo")
     def test_opts_returns_200(self):
         self.getPage("/opts")
         self.assertStatus('200 OK')
+        body = self.body.decode() if isinstance(self.body, bytes) else self.body
+        self.assertTrue(
+            '<div id="root"></div>' in body or 'Web UI bundle not found' in body,
+            msg=f"Unexpected /opts body: {body[:300]}"
+        )
 
     def test_optsexport(self):
         self.getPage("/optsexport")
