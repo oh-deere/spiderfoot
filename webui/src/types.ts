@@ -67,3 +67,43 @@ export type SettingsPayload = {
   groups: SettingsGroup[];                  // Global first, then modules sorted by name
   settings: Record<string, SettingValue>;   // flat master (for diff + serialize)
 };
+
+export type ScanStatusPayload = {
+  name: string;
+  target: string;
+  created: string;
+  started: string;
+  ended: string;
+  status: ScanStatus;
+  riskMatrix: RiskMatrix;
+};
+
+export type ScanSummaryRow = {
+  typeId: string;
+  typeLabel: string;
+  lastSeen: string;
+  count: number;
+  uniqueCount: number;
+};
+
+export type ScanOptsPayload = {
+  meta: string[];
+  config: Record<string, unknown>;
+  configDesc: Record<string, string>;
+};
+
+export type ScanLogEntry = {
+  generatedMs: number;
+  component: string;
+  level: string;
+  message: string;
+};
+
+export function isScanRunning(status: ScanStatus): boolean {
+  return (
+    status === 'CREATED' ||
+    status === 'STARTING' ||
+    status === 'STARTED' ||
+    status === 'RUNNING'
+  );
+}
