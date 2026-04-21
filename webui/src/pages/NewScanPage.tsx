@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Accordion,
@@ -13,7 +14,7 @@ import {
   Text,
 } from '@mantine/core';
 import { listModules, listEventTypes } from '../api/modules';
-import { startScan } from '../api/scans';
+import { startScan, fetchScanClone } from '../api/scans';
 import { UseCaseTab } from '../components/UseCaseTab';
 import { ModuleTab } from '../components/ModuleTab';
 import { TypeTab } from '../components/TypeTab';
@@ -40,20 +41,55 @@ export function NewScanPage() {
     staleTime: Infinity,
   });
 
+  const [searchParams] = useSearchParams();
+  const cloneId = searchParams.get('clone');
+
+  const cloneQuery = useQuery({
+    queryKey: ['clonescan', cloneId],
+    queryFn: () => fetchScanClone(cloneId!),
+    enabled: !!cloneId,
+    staleTime: Infinity,
+  });
+
+  // Seed the form state once from the clone response. Guard with a ref
+  // so user edits after prefill aren't clobbered.
+  const cloneSeededRef = useRef(false);
+  useEffect(() => {
+    if (cloneSeededRef.current) return;
+    if (!cloneQuery.data) return;
+    if (!modulesQuery.data) return;
+    cloneSeededRef.current = true;
+    setScanName(`${cloneQuery.data.scanName} (clone)`);
+    setScanTarget(cloneQuery.data.scanTarget);
+    if (cloneQuery.data.moduleList.length > 0) {
+      setMode('module');
+      setSelectedModules(new Set(cloneQuery.data.moduleList));
+    } else if (cloneQuery.data.typeList.length > 0) {
+      setMode('type');
+      setSelectedTypes(new Set(cloneQuery.data.typeList));
+    } else {
+      setMode('usecase');
+      setUsecase(cloneQuery.data.usecase);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloneQuery.data, modulesQuery.data]);
+
   // Default: all modules + all types checked once loaded.
   useEffect(() => {
+    if (cloneId) return;
     if (modulesQuery.data && selectedModules.size === 0) {
       setSelectedModules(new Set(modulesQuery.data.map((m) => m.name)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modulesQuery.data]);
+  }, [modulesQuery.data, cloneId]);
 
   useEffect(() => {
+    if (cloneId) return;
     if (typesQuery.data && selectedTypes.size === 0) {
       setSelectedTypes(new Set(typesQuery.data.map((t) => t.id)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typesQuery.data]);
+  }, [typesQuery.data, cloneId]);
 
   const submitMutation = useMutation({
     mutationFn: startScan,
@@ -72,7 +108,7 @@ export function NewScanPage() {
     (mode === 'type' && selectedTypes.size === 0) ||
     submitMutation.isPending;
 
-  if (modulesQuery.isLoading || typesQuery.isLoading) {
+  if (modulesQuery.isLoading || typesQuery.isLoading || (cloneId && cloneQuery.isLoading)) {
     return (
       <Group justify="center" mt="xl">
         <Loader />

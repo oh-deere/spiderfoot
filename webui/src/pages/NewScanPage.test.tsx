@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MantineProvider } from '@mantine/core';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { NewScanPage } from './NewScanPage';
 
 describe('NewScanPage', () => {
@@ -35,7 +36,9 @@ describe('NewScanPage', () => {
     return render(
       <MantineProvider>
         <QueryClientProvider client={qc}>
-          <NewScanPage />
+          <MemoryRouter initialEntries={['/newscan']}>
+            <NewScanPage />
+          </MemoryRouter>
         </QueryClientProvider>
       </MantineProvider>,
     );
@@ -138,5 +141,63 @@ describe('NewScanPage', () => {
     expect(
       await screen.findByText('Unrecognised target type.'),
     ).toBeInTheDocument();
+  });
+
+  it('prefills the form when navigated with ?clone=<guid>', async () => {
+    (globalThis.fetch as Mock).mockImplementation((url: string) => {
+      if (url === '/modules') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([
+              { name: 'sfp_countryname', descr: 'Country name', api_key: false },
+              { name: 'sfp_dnsresolve', descr: 'DNS resolver', api_key: false },
+            ]),
+            { status: 200 },
+          ),
+        );
+      }
+      if (url === '/eventtypes') {
+        return Promise.resolve(
+          new Response(JSON.stringify([['Domain Name', 'DOMAIN_NAME']]), {
+            status: 200,
+          }),
+        );
+      }
+      if (url.startsWith('/clonescan')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              scanName: 'monthly-recon',
+              scanTarget: 'spiderfoot.net',
+              modulelist: ['sfp_countryname'],
+              typelist: [],
+              usecase: '',
+            }),
+            { status: 200 },
+          ),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
+
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <MantineProvider>
+        <QueryClientProvider client={qc}>
+          <MemoryRouter initialEntries={['/newscan?clone=abc']}>
+            <Routes>
+              <Route path="/newscan" element={<NewScanPage />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </MantineProvider>,
+    );
+
+    const nameInput = await screen.findByLabelText(/Scan Name/);
+    expect((nameInput as HTMLInputElement).value).toBe('monthly-recon (clone)');
+    const targetInput = screen.getByLabelText(/Scan Target/);
+    expect((targetInput as HTMLInputElement).value).toBe('spiderfoot.net');
   });
 });

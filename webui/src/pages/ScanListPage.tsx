@@ -156,6 +156,12 @@ export function ScanListPage() {
                         View
                       </Menu.Item>
                       <Menu.Item
+                        component="a"
+                        href={`/newscan?clone=${encodeURIComponent(scan.guid)}`}
+                      >
+                        Clone
+                      </Menu.Item>
+                      <Menu.Item
                         color="red"
                         onClick={() => openDeleteConfirm(scan)}
                       >
