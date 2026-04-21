@@ -1011,11 +1011,17 @@ class SpiderFootWebUi:
         raise cherrypy.HTTPRedirect(f"{self.docroot}/", status=302)
 
     @cherrypy.expose
-    def newscan(self: 'SpiderFootWebUi') -> str:
+    def newscan(self: 'SpiderFootWebUi', clone: str = None) -> str:
         """Serve the SPA shell at /newscan.
 
         Milestone 2 moved the scan-creation form into the SPA. See
-        webui/src/pages/NewScanPage.tsx.
+        webui/src/pages/NewScanPage.tsx. The optional `clone` query
+        param is consumed by the SPA (NewScanPage reads it via
+        useSearchParams to prefill from /clonescan); the handler just
+        accepts it so CherryPy doesn't reject the query string.
+
+        Args:
+            clone (str): scan id to clone (consumed by the SPA, not the handler)
 
         Returns:
             str: SPA shell HTML.

@@ -46,11 +46,6 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
                 'tools.encode.text_only': False,
                 'tools.encode.add_charset': True,
             },
-            '/static': {
-                'tools.staticdir.on': True,
-                'tools.staticdir.dir': 'static',
-                'tools.staticdir.root': f"{os.path.dirname(os.path.abspath(__file__))}/../../spiderfoot",
-            }
         }
 
         cherrypy.tree.mount(SpiderFootWebUi(default_web_config, default_config), script_name=default_web_config.get('root'), config=conf)
@@ -58,10 +53,6 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
     def test_invalid_page_returns_404(self):
         self.getPage("/doesnotexist")
         self.assertStatus('404 Not Found')
-
-    def test_static_returns_200(self):
-        self.getPage("/static/img/spiderfoot-header.png")
-        self.assertStatus('200 OK')
 
     def test_scaneventresultexport_invalid_scan_id_returns_200(self):
         self.getPage("/scaneventresultexport?id=doesnotexist&type=doesnotexist")
@@ -193,7 +184,7 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
     def test_savesettings_invalid_token_json_returns_error(self):
         """When Accept: application/json is set and the CSRF token
         is invalid, /savesettings returns ['ERROR', msg] instead of
-        rendering error.tmpl.
+        the HTML error fallback.
         """
         headers = [("Accept", "application/json")]
         self.getPage(

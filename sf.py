@@ -481,16 +481,14 @@ def start_web_server(sfWebUiConfig: dict, sfConfig: dict, loggingQueue=None) -> 
 
     log.info(f"Starting web server at {web_host}:{web_port} ...")
 
-    # Enable access to static files via the web directory
+    # Enable access to the SPA bundle. The legacy /static mount (jQuery,
+    # Bootstrap 3, Mako templates' assets) was retired in Milestone 5 — the
+    # only HTML the server emits now is the ~35 lines of fallback in
+    # SpiderFootWebUi.error / error_page_404 / _serve_spa_shell.
     conf = {
         '/query': {
             'tools.encode.text_only': False,
             'tools.encode.add_charset': True,
-        },
-        '/static': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': 'static',
-            'tools.staticdir.root': f"{os.path.dirname(os.path.abspath(__file__))}/spiderfoot"
         },
         '/static/webui': {
             # SPA bundle emitted by `npm run build`. Served read-only.

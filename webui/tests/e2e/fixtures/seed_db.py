@@ -94,16 +94,28 @@ def _insert_scans(db: "SpiderFootDb", clear_first: bool) -> None:
         "VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
 
+    monthly_recon_guid = None
     with db.dbhLock:
         if clear_first:
             db.dbh.execute("DELETE FROM tbl_scan_instance")
+            db.dbh.execute("DELETE FROM tbl_scan_config")
         for name, target, status, c_off, s_off, e_off in SCANS:
             guid = str(uuid.uuid4())
             created = now_ms - c_off * 1000
             started = now_ms - s_off * 1000
             ended = 0 if e_off == 0 else now_ms - e_off * 1000
             db.dbh.execute(qry, (guid, name, target, created, started, ended, status))
+            if name == "monthly-recon":
+                monthly_recon_guid = guid
         db.conn.commit()
+
+    # Minimal scan_config for monthly-recon so /clonescan returns a usable
+    # prefill (the 08-clone-scan spec exercises the Clone row action).
+    if monthly_recon_guid is not None:
+        db.scanConfigSet(
+            monthly_recon_guid,
+            {"_modulesenabled": "sfp_countryname,sfp_dnsresolve"},
+        )
 
 
 if __name__ == "__main__":
