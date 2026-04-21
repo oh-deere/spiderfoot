@@ -72,3 +72,32 @@ export async function startScan(params: StartScanParams): Promise<string> {
   }
   return result[1];
 }
+
+type CloneScanResponse = {
+  scanName: string;
+  scanTarget: string;
+  modulelist: string[];
+  typelist: string[];
+  usecase: string;
+};
+
+export type ScanClonePrefill = {
+  scanName: string;
+  scanTarget: string;
+  moduleList: string[];
+  typeList: string[];
+  usecase: UseCase;
+};
+
+export async function fetchScanClone(id: string): Promise<ScanClonePrefill> {
+  const raw = await fetchJson<CloneScanResponse>(
+    `/clonescan?id=${encodeURIComponent(id)}`,
+  );
+  return {
+    scanName: raw.scanName,
+    scanTarget: raw.scanTarget,
+    moduleList: raw.modulelist ?? [],
+    typeList: raw.typelist ?? [],
+    usecase: (raw.usecase || 'all') as UseCase,
+  };
+}

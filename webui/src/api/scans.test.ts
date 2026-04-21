@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
-import { listScans, deleteScan, startScan } from './scans';
+import { listScans, deleteScan, startScan, fetchScanClone } from './scans';
 import { ApiError } from './client';
 
 describe('listScans', () => {
@@ -241,5 +241,42 @@ describe('startScan', () => {
         typeList: [],
       }),
     ).rejects.toThrow(/Malformed/);
+  });
+});
+
+describe('fetchScanClone', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('normalizes snake_case modulelist/typelist into camelCase + sane defaults', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          scanName: 'original',
+          scanTarget: 'example.com',
+          modulelist: ['sfp_countryname', 'sfp_dnsresolve'],
+          typelist: [],
+          usecase: '',
+        }),
+        { status: 200 },
+      ),
+    );
+    const result = await fetchScanClone('abc');
+    expect(result).toEqual({
+      scanName: 'original',
+      scanTarget: 'example.com',
+      moduleList: ['sfp_countryname', 'sfp_dnsresolve'],
+      typeList: [],
+      usecase: 'all',
+    });
+    const [url] = (globalThis.fetch as Mock).mock.calls[0];
+    expect(url).toBe('/clonescan?id=abc');
   });
 });
