@@ -56,6 +56,20 @@ describe('ScanInfoPage', () => {
           ),
         );
       }
+      if (url.startsWith('/scansummary')) {
+        return Promise.resolve(new Response('[]', { status: 200 }));
+      }
+      if (url.startsWith('/scanopts')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ meta: [], config: {}, configdesc: {} }),
+            { status: 200 },
+          ),
+        );
+      }
+      if (url.startsWith('/scanlog')) {
+        return Promise.resolve(new Response('[]', { status: 200 }));
+      }
       return Promise.reject(new Error(`Unexpected URL ${url}`));
     });
   }

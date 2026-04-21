@@ -18,6 +18,9 @@ import { ScanStatusBadge } from '../components/ScanStatusBadge';
 import { ApiError } from '../api/client';
 import { isScanRunning } from '../types';
 import { PlaceholderTab } from './scaninfo/PlaceholderTab';
+import { StatusTab } from './scaninfo/StatusTab';
+import { InfoTab } from './scaninfo/InfoTab';
+import { LogTab } from './scaninfo/LogTab';
 
 type TabKey =
   | 'status'
@@ -149,8 +152,7 @@ export function ScanInfoPage() {
         </Tabs.List>
 
         <Tabs.Panel value="status" pt="md">
-          {/* Task 4 fills in StatusTab */}
-          <Alert color="gray" title="Status tab coming in Task 4">Stub.</Alert>
+          <StatusTab id={id} status={status} />
         </Tabs.Panel>
         <Tabs.Panel value="correlations" pt="md">
           <PlaceholderTab tabLabel="Correlations" scanId={id} />
@@ -162,12 +164,10 @@ export function ScanInfoPage() {
           <PlaceholderTab tabLabel="Graph" scanId={id} />
         </Tabs.Panel>
         <Tabs.Panel value="info" pt="md">
-          {/* Task 4 fills in InfoTab */}
-          <Alert color="gray" title="Info tab coming in Task 4">Stub.</Alert>
+          <InfoTab id={id} />
         </Tabs.Panel>
         <Tabs.Panel value="log" pt="md">
-          {/* Task 4 fills in LogTab */}
-          <Alert color="gray" title="Log tab coming in Task 4">Stub.</Alert>
+          <LogTab id={id} status={status} />
         </Tabs.Panel>
       </Tabs>
     </Stack>
