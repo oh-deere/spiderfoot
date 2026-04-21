@@ -331,7 +331,7 @@ These modules do not declare a `meta.dataSource.model` (they are local analysis/
 
 ## Web UI
 
-SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestones 1–4b (2026-04-20) migrated `/` (scan list), `/newscan` (scan creation), `/opts` (settings), and `/scaninfo` with 5 of 6 tabs (Status, Info, Log, Browse, Correlations). The Graph tab still renders a placeholder that links to the still-Mako `/scaninfo-legacy`; milestone 4c replaces it with @visx/network + d3-force and retires the legacy route. The final sweep retires shared chrome (`HEADER.tmpl`/`FOOTER.tmpl`/`error.tmpl`) alongside.
+SpiderFoot's classic UI (CherryPy + Mako + jQuery + Bootstrap 3) is being migrated **one page at a time** to a React SPA living in `webui/`. Milestones 1–4c (2026-04-20) migrated `/` (scan list), `/newscan` (scan creation), `/opts` (settings), and `/scaninfo` with all six tabs (Status, Info, Log, Browse, Correlations, Graph via @visx/network + d3-force). Shared chrome (`HEADER.tmpl` / `FOOTER.tmpl` / `error.tmpl`, plus `spiderfoot.js` and the legacy `spiderfoot/static/node_modules/` bundle) survives until the final-sweep milestone because `self.error()` still renders Mako HTML for legacy form-post error paths.
 
 **SPA stack:** Vite + React 19 + TypeScript + TanStack Query + Mantine + React Router. Vitest for unit tests, Playwright for E2E.
 

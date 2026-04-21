@@ -78,12 +78,12 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - Milestone 3 (2026-04-20) — `/opts` settings page: left-rail navigation, filterable module list, dirty indicator, Import/Export/Reset flows. Extended `/optsraw` with per-option descriptions and per-module metadata; `/savesettings` gained JSON success/error branches.
 - Milestone 4a (2026-04-20) — `/scaninfo` SPA shell + Status/Info/Log tabs. Browse/Correlations/Graph tabs render a placeholder linking to the temporarily-retained `/scaninfo-legacy` Mako handler. Zero new JSON endpoints — reuses `/scanstatus`, `/scansummary`, `/scanopts`, `/scanlog`, `/scanexportlogs`, `/stopscan`.
 - Milestone 4b (2026-04-20) — `/scaninfo` Browse + Correlations tabs. Two-view drill-in (event-type list → events, correlations list → events) sharing an `EventList` component that hosts Full/Unique toggle, hide-FP switch, debounced value search, CSV+Excel export, and per-row FP-flip. Zero new JSON endpoints — reuses `/scaneventresults`, `/scaneventresultsunique`, `/search`, `/scancorrelations`, `/scaneventresultexport`, `/resultsetfp`.
+- Milestone 4c (2026-04-20) — `/scaninfo` Graph tab. React renderer on `@visx/network` + `d3-force` with pan/zoom, PNG+GEXF export, and a >500-node fallback that points at the GEXF download for external graph tools. Retires `scaninfo_legacy` handler, `scaninfo.tmpl` (905 lines), `viz.js` (387 lines), and HEADER.tmpl's viz.js reference. `/scaninfo-legacy` now returns 404.
 
-Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b}-design.md`.
+Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c}-design.md`.
 
 **Remaining Mako pages to migrate** (each its own spec + plan):
-- `/scaninfo` — Graph tab + `viz.js` replacement (milestone 4c). Uses @visx/network + d3-force, consistent with nightscout-java's @visx/* stack.
-- Final sweep: retires `/scaninfo-legacy`, `scaninfo.tmpl`, `HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`, `spiderfoot.js`, legacy CSS, and `spiderfoot/static/node_modules/`. Also folds in the Clone-scan UX (scan list menu + new JSON endpoint).
+- Final sweep: retires `HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`, `spiderfoot.js`, legacy CSS (`spiderfoot.css` / `dark.css`), `spiderfoot/static/node_modules/` (jquery, bootstrap3, d3, sigma, tablesorter, alertifyjs), the Mako TemplateLookup + imports in sfwebui.py, the `self.error()` helper (convert to SPA route or static HTML), and the legacy `/static` CherryPy mount. Also folds in the Clone-scan UX (scan list menu + new JSON endpoint).
 
 **Retirements triggered by each migration:**
 - Delete the Mako template + its CherryPy handler.
