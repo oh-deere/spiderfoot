@@ -11,6 +11,7 @@ import {
   searchScanEvents,
   fetchCorrelations,
   toggleFalsePositive,
+  fetchScanGraph,
 } from './scaninfo';
 import { ApiError } from './client';
 
@@ -398,5 +399,44 @@ describe('toggleFalsePositive', () => {
     await expect(
       toggleFalsePositive({ id: 'abc', resultIds: ['h1'], fp: true }),
     ).rejects.toThrow('Not allowed');
+  });
+});
+
+describe('fetchScanGraph', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('maps {nodes, edges} with color-based isRoot derivation', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          nodes: [
+            { id: '1', label: 'example.com', x: 10, y: 20, size: '1', color: '#f00' },
+            { id: '2', label: 'subdomain', x: 30, y: 40, size: '1', color: '#000' },
+          ],
+          edges: [
+            { id: '1', source: '1', target: '2' },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    const result = await fetchScanGraph('abc');
+    expect(result.nodes).toEqual([
+      { id: '1', label: 'example.com', isRoot: true },
+      { id: '2', label: 'subdomain', isRoot: false },
+    ]);
+    expect(result.edges).toEqual([
+      { id: '1', source: '1', target: '2' },
+    ]);
+    const [url] = (globalThis.fetch as Mock).mock.calls[0];
+    expect(url).toBe('/scanviz?id=abc&gexf=0');
   });
 });

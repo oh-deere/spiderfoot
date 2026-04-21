@@ -124,3 +124,22 @@ export type CorrelationRow = {
 };
 
 export type EventViewMode = 'full' | 'unique';
+
+export type GraphNode = {
+  id: string;
+  label: string;
+  isRoot: boolean;
+};
+
+export type GraphEdge = {
+  id: string;
+  source: string;
+  target: string;
+};
+
+export type GraphPayload = {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+};
+
+export type GraphLayoutMode = 'force' | 'random';

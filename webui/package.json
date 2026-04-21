@@ -18,6 +18,10 @@
     "@mantine/notifications": "^9.0.2",
     "@tabler/icons-react": "^3.41.1",
     "@tanstack/react-query": "^5.99.2",
+    "@visx/network": "^3.12.0",
+    "@visx/responsive": "^3.12.0",
+    "@visx/zoom": "^3.12.0",
+    "d3-force": "^3.0.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1"
@@ -25,9 +29,11 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

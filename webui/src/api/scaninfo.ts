@@ -9,6 +9,7 @@ import type {
   EventRisk,
   CorrelationRow,
   CorrelationRisk,
+  GraphPayload,
 } from '../types';
 
 export type ScanEventRow = {
@@ -213,4 +214,38 @@ export async function toggleFalsePositive(args: {
   if (!Array.isArray(result) || result[0] !== 'SUCCESS') {
     throw new Error(result?.[1] ?? 'Failed to toggle false positive flag');
   }
+}
+
+type ScanGraphRaw = {
+  nodes: Array<{
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+    size: string;
+    color: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+  }>;
+};
+
+export async function fetchScanGraph(id: string): Promise<GraphPayload> {
+  const raw = await fetchJson<ScanGraphRaw>(
+    `/scanviz?id=${encodeURIComponent(id)}&gexf=0`,
+  );
+  return {
+    nodes: raw.nodes.map((n) => ({
+      id: n.id,
+      label: n.label,
+      isRoot: n.color === '#f00',
+    })),
+    edges: raw.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+    })),
+  };
 }
