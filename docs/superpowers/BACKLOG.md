@@ -77,12 +77,12 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - Milestone 2 (2026-04-20) — `/newscan` scan creation form + three selection tabs + filterable module list. Retired `clonescan` handler (clone UI deferred).
 - Milestone 3 (2026-04-20) — `/opts` settings page: left-rail navigation, filterable module list, dirty indicator, Import/Export/Reset flows. Extended `/optsraw` with per-option descriptions and per-module metadata; `/savesettings` gained JSON success/error branches.
 - Milestone 4a (2026-04-20) — `/scaninfo` SPA shell + Status/Info/Log tabs. Browse/Correlations/Graph tabs render a placeholder linking to the temporarily-retained `/scaninfo-legacy` Mako handler. Zero new JSON endpoints — reuses `/scanstatus`, `/scansummary`, `/scanopts`, `/scanlog`, `/scanexportlogs`, `/stopscan`.
+- Milestone 4b (2026-04-20) — `/scaninfo` Browse + Correlations tabs. Two-view drill-in (event-type list → events, correlations list → events) sharing an `EventList` component that hosts Full/Unique toggle, hide-FP switch, debounced value search, CSV+Excel export, and per-row FP-flip. Zero new JSON endpoints — reuses `/scaneventresults`, `/scaneventresultsunique`, `/search`, `/scancorrelations`, `/scaneventresultexport`, `/resultsetfp`.
 
-Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a}-design.md`.
+Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b}-design.md`.
 
 **Remaining Mako pages to migrate** (each its own spec + plan):
-- `/scaninfo` — Browse + Correlations tabs (milestone 4b).
-- `/scaninfo` — Graph tab + `viz.js` replacement (milestone 4c). Picks a React-native graph library (react-flow / cytoscape / keep sigma wrapped).
+- `/scaninfo` — Graph tab + `viz.js` replacement (milestone 4c). Uses @visx/network + d3-force, consistent with nightscout-java's @visx/* stack.
 - Final sweep: retires `/scaninfo-legacy`, `scaninfo.tmpl`, `HEADER.tmpl`, `FOOTER.tmpl`, `error.tmpl`, `spiderfoot.js`, legacy CSS, and `spiderfoot/static/node_modules/`. Also folds in the Clone-scan UX (scan list menu + new JSON endpoint).
 
 **Retirements triggered by each migration:**
