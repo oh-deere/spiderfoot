@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActionIcon,
@@ -53,13 +53,15 @@ export function OptsPage() {
     staleTime: Infinity,
   });
 
-  // Seed `current` once the query resolves (and on every subsequent refetch,
-  // to pick up server-side coercions after a save).
-  const lastSettingsRef = useRef<Record<string, SettingValue> | null>(null);
-  if (query.data && query.data.settings !== lastSettingsRef.current) {
-    lastSettingsRef.current = query.data.settings;
-    setCurrent({ ...query.data.settings });
-  }
+  // Seed `current` whenever the server sends a fresh settings snapshot
+  // (initial load + any post-save refetch). We rely on useQuery giving
+  // us a new object reference each refetch, so this only runs when the
+  // server state actually changes.
+  useEffect(() => {
+    if (query.data) {
+      setCurrent({ ...query.data.settings });
+    }
+  }, [query.data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {

@@ -93,6 +93,8 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2}-design.md`.
 **Smaller follow-ups (no spec needed yet):**
 - Pin Node base image to a specific patch version (`node:22.X.Y-slim`) for Docker build reproducibility. Currently floats on `node:22-slim` — matches the pattern of `python:3.12-slim-bookworm` but both are worth tightening.
 - URL-bound filter state on the scan-list page (`useSearchParams`) so deep-linked filters work.
+- **OptsPage save-refetch race:** between save completing and the refetch landing, concurrent user edits in `current` get clobbered by the re-seed `useEffect`. Low-likelihood but latent. Cheap fix: disable the form while `saveMutation.isPending`.
+- **OptsPage test coverage gaps:** add Vitest cases for import flow, reset flow, error-alert rendering, and filter narrowing. Each is ~10-15 lines against the existing mockApi harness.
 
 ---
 
