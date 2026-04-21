@@ -1,6 +1,5 @@
-import { fetchJson } from './client';
-import { ApiError } from './client';
-import type { Scan, ScanStatus, RiskMatrix } from '../types';
+import { fetchJson, ApiError } from './client';
+import type { Scan, ScanStatus, RiskMatrix, SelectionMode, UseCase } from '../types';
 
 export async function listScans(): Promise<Scan[]> {
   const rows = await fetchJson<unknown[][]>('/scanlist');
@@ -37,8 +36,8 @@ export async function deleteScan(guid: string): Promise<void> {
 export type StartScanParams = {
   scanName: string;
   scanTarget: string;
-  mode: import('../types').SelectionMode;
-  usecase: import('../types').UseCase;
+  mode: SelectionMode;
+  usecase: UseCase;
   moduleList: string[];
   typeList: string[];
 };
@@ -53,6 +52,8 @@ export async function startScan(params: StartScanParams): Promise<string> {
   );
   body.set(
     'typelist',
+    // Server expects event type ids wrapped as "type_<ID>" — see
+    // sfwebui.startscan() which strips the prefix via .replace('type_', '').
     params.mode === 'type' ? params.typeList.map((t) => `type_${t}`).join(',') : '',
   );
   body.set('usecase', params.mode === 'usecase' ? params.usecase : '');

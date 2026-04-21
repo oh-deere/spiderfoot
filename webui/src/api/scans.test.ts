@@ -207,4 +207,39 @@ describe('startScan', () => {
     expect(body.get('typelist')).toBe('type_DOMAIN_NAME,type_IP_ADDRESS');
     expect(body.get('modulelist')).toBe('');
   });
+
+  it('sends usecase mode with usecase populated and other lists empty', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['SUCCESS', 'abc']), { status: 200 }),
+    );
+    await startScan({
+      scanName: 't',
+      scanTarget: 'x',
+      mode: 'usecase',
+      usecase: 'Footprint',
+      moduleList: [],
+      typeList: [],
+    });
+    const [, init] = (globalThis.fetch as Mock).mock.calls[0];
+    const body = new URLSearchParams(init.body);
+    expect(body.get('usecase')).toBe('Footprint');
+    expect(body.get('modulelist')).toBe('');
+    expect(body.get('typelist')).toBe('');
+  });
+
+  it('throws on malformed /startscan response', async () => {
+    (globalThis.fetch as Mock).mockResolvedValue(
+      new Response(JSON.stringify(['SUCCESS']), { status: 200 }),
+    );
+    await expect(
+      startScan({
+        scanName: 't',
+        scanTarget: 'x',
+        mode: 'usecase',
+        usecase: 'all',
+        moduleList: [],
+        typeList: [],
+      }),
+    ).rejects.toThrow(/Malformed/);
+  });
 });
