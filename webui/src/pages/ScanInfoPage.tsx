@@ -17,12 +17,12 @@ import { fetchScanStatus, stopScan } from '../api/scaninfo';
 import { ScanStatusBadge } from '../components/ScanStatusBadge';
 import { ApiError } from '../api/client';
 import { isScanRunning } from '../types';
-import { PlaceholderTab } from './scaninfo/PlaceholderTab';
 import { StatusTab } from './scaninfo/StatusTab';
 import { InfoTab } from './scaninfo/InfoTab';
 import { LogTab } from './scaninfo/LogTab';
 import { BrowseTab } from './scaninfo/BrowseTab';
 import { CorrelationsTab } from './scaninfo/CorrelationsTab';
+import { GraphTab } from './scaninfo/GraphTab';
 
 type TabKey =
   | 'status'
@@ -163,7 +163,7 @@ export function ScanInfoPage() {
           <BrowseTab id={id} />
         </Tabs.Panel>
         <Tabs.Panel value="graph" pt="md">
-          <PlaceholderTab tabLabel="Graph" scanId={id} />
+          <GraphTab id={id} />
         </Tabs.Panel>
         <Tabs.Panel value="info" pt="md">
           <InfoTab id={id} />
