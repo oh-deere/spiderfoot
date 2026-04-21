@@ -191,6 +191,32 @@ class SpiderFootWebUi:
             }
         }
 
+    def _wants_json(self: 'SpiderFootWebUi') -> bool:
+        """Whether the current request prefers a JSON response.
+
+        Returns:
+            bool: True when the caller set Accept: application/json.
+        """
+        accept = cherrypy.request.headers.get('Accept') or ''
+        return 'application/json' in accept
+
+    def _json_response(self: 'SpiderFootWebUi', status: str, message: str = "") -> bytes:
+        """Build the server's ["SUCCESS"]/["ERROR", msg] response tuple.
+
+        Args:
+            status (str): Status token, typically "SUCCESS" or "ERROR".
+            message (str): Optional human-readable message. Omitted from
+                the payload when empty so ["SUCCESS"] stays a single-item
+                list, matching the legacy contract.
+
+        Returns:
+            bytes: UTF-8 encoded JSON body for the CherryPy response.
+        """
+        cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
+        if message:
+            return json.dumps([status, message]).encode('utf-8')
+        return json.dumps([status]).encode('utf-8')
+
     def error(self: 'SpiderFootWebUi', message: str) -> None:
         """Show generic error page with error message.
 
@@ -1122,7 +1148,10 @@ class SpiderFootWebUi:
             HTTPRedirect: redirect to scan settings
         """
         if str(token) != str(self.token):
-            return self.error(f"Invalid token ({token})")
+            msg = f"Invalid token ({token})"
+            if self._wants_json():
+                return self._json_response("ERROR", msg)
+            return self.error(msg)
 
         # configFile seems to get set even if a file isn't uploaded
         if configFile and configFile.file:
@@ -1145,13 +1174,21 @@ class SpiderFootWebUi:
 
                 allopts = json.dumps(tmp).encode('utf-8')
             except Exception as e:
-                return self.error(f"Failed to parse input file. Was it generated from SpiderFoot? ({e})")
+                msg = f"Failed to parse input file. Was it generated from SpiderFoot? ({e})"
+                if self._wants_json():
+                    return self._json_response("ERROR", msg)
+                return self.error(msg)
 
         # Reset config to default
         if allopts == "RESET":
             if self.reset_settings():
+                if self._wants_json():
+                    return self._json_response("SUCCESS")
                 raise cherrypy.HTTPRedirect(f"{self.docroot}/opts?updated=1")
-            return self.error("Failed to reset settings")
+            msg = "Failed to reset settings"
+            if self._wants_json():
+                return self._json_response("ERROR", msg)
+            return self.error(msg)
 
         # Save settings
         try:
@@ -1169,8 +1206,13 @@ class SpiderFootWebUi:
             self.config = sf.configUnserialize(cleanopts, currentopts)
             dbh.configSet(sf.configSerialize(self.config))
         except Exception as e:
-            return self.error(f"Processing one or more of your inputs failed: {e}")
+            msg = f"Processing one or more of your inputs failed: {e}"
+            if self._wants_json():
+                return self._json_response("ERROR", msg)
+            return self.error(msg)
 
+        if self._wants_json():
+            return self._json_response("SUCCESS")
         raise cherrypy.HTTPRedirect(f"{self.docroot}/opts?updated=1")
 
     @cherrypy.expose

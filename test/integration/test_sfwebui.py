@@ -178,6 +178,40 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.getPage("/savesettingsraw")
         self.assertStatus('200 OK')
 
+    def test_savesettings_invalid_token_json_returns_error(self):
+        """When Accept: application/json is set and the CSRF token
+        is invalid, /savesettings returns ['ERROR', msg] instead of
+        rendering error.tmpl.
+        """
+        headers = [("Accept", "application/json")]
+        self.getPage(
+            "/savesettings?allopts=%7B%7D&token=notavalidtoken",
+            headers=headers,
+        )
+        self.assertStatus('200 OK')
+        body = json.loads(self.body)
+        self.assertIsInstance(body, list)
+        self.assertEqual(body[0], "ERROR")
+        self.assertIn("Invalid token", body[1])
+
+    def test_savesettings_json_success_returns_success(self):
+        """When Accept: application/json + valid token, /savesettings
+        returns ['SUCCESS'] instead of redirecting.
+        """
+        # Fetch the current token via /optsraw.
+        self.getPage("/optsraw")
+        token = json.loads(self.body)[1]['token']
+
+        headers = [("Accept", "application/json")]
+        self.getPage(
+            f"/savesettings?allopts=%7B%7D&token={token}",
+            headers=headers,
+        )
+        self.assertStatus('200 OK')
+        body = json.loads(self.body)
+        self.assertIsInstance(body, list)
+        self.assertEqual(body[0], "SUCCESS")
+
     def test_resultsetfp(self):
         self.getPage("/resultsetfp?id=doesnotexist&resultids=doesnotexist&fp=1")
         self.assertStatus('200 OK')
