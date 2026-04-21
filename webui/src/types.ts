@@ -107,3 +107,20 @@ export function isScanRunning(status: ScanStatus): boolean {
     status === 'RUNNING'
   );
 }
+
+export type EventRisk = 'NONE' | 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH';
+
+export type CorrelationRisk = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH';
+
+export type CorrelationRow = {
+  id: string;
+  headline: string;
+  collection: string;
+  ruleId: string;
+  ruleName: string;
+  ruleDescr: string;
+  ruleRisk: CorrelationRisk;
+  eventsCount: number;
+};
+
+export type EventViewMode = 'full' | 'unique';
