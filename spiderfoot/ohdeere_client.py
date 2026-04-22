@@ -128,6 +128,15 @@ class OhDeereClient:
 
     def _request(self, method: str, url: str, scope: str,
                  body: dict | None, timeout: int) -> dict:
+        """Public request path — no circuit breaker yet (Task 3).
+
+        Delegates to _request_unprotected until the breaker wrapper
+        is added.
+        """
+        return self._request_unprotected(method, url, scope, body, timeout)
+
+    def _request_unprotected(self, method: str, url: str, scope: str,
+                             body: dict | None, timeout: int) -> dict:
         if self.disabled:
             raise OhDeereClientError(
                 "client disabled — OHDEERE_CLIENT_ID / OHDEERE_CLIENT_SECRET not set"
