@@ -95,18 +95,15 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 
 ## Infrastructure / platform
 
+**Shipped:**
+- **pybreaker circuit breaker for OhDeere integrations (2026-04-20)** — per-scope `pybreaker.CircuitBreaker` wraps `OhDeereClient._request`. Trips after 5 consecutive `OhDeereServerError`s; 60s cooldown. Auth / 4xx pass through unchanged. Spec: `docs/superpowers/specs/2026-04-20-pybreaker-ohdeere-client-design.md`.
+
 ### Postgres storage migration
 - **What:** replace SpiderFoot's SQLite at `$SPIDERFOOT_DATA/spiderfoot.db` with Postgres. OhDeere already runs CloudNativePG.
 - **Blocker:** SpiderFoot's entire schema lives in `spiderfoot/db.py` as SQL strings; all queries are raw SQL. `SpiderFootSqliteLogHandler` is sqlite-specific. Scan concurrency model assumes per-scan SQLite file semantics.
 - **Migration options:** adapter pattern with sqlite/postgres backends, or hard cut with migration tooling (Flyway fits here — already used elsewhere in OhDeere; run migrations in an init-container before `sf.py` starts).
 - **Size:** large — own spec + plan + multi-step implementation cycle.
 - **Unlocks:** concurrent scans, cross-scan JOINs for analytics, JSONB on `RAW_RIR_DATA` (typed queries on the raw dumps), proper backup/restore, integration with other OhDeere services.
-
-### `pybreaker` circuit breaker for OhDeere integrations
-- **What:** add `pybreaker.CircuitBreaker` to `spiderfoot/ohdeere_client.py`, per-scope keyed. A dead scope (e.g. llm:query gateway down) stops module attempts for a cooldown window instead of letting per-scan `errorState` reset every scan.
-- **Blocker:** earns its keep once 2+ `sfp_ohdeere_*` modules share the helper. We're at 7 consumers now — ready to implement.
-- **Size:** small — ~30 lines in `ohdeere_client`, ~5 tests. Plus the `pybreaker` dependency.
-- **Value:** protects the OhDeere auth server and downstream services from repeated failed scan attempts during outages.
 
 ### Live-scan OhDeere smoke / CLAUDE.md refresh
 - **What:** operational task — run one real scan with `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` set against a benign target; verify every sfp_ohdeere_* module produces real events against the live services. Report cluster readiness.
@@ -131,7 +128,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | ~~High~~ Done | ~~Live-scan OhDeere smoke~~ — passed 2026-04-20 |
 | Medium | Typed module metadata registry (spec ready) |
 | Medium | `sfp_ohdeere_llm_adverse_media` (blocked on Qwen 32B) |
-| Medium | `pybreaker` circuit breaker |
+| ~~Medium~~ Done | ~~`pybreaker` circuit breaker~~ — shipped 2026-04-20 |
 | Medium | Richer `sfp_ohdeere_notification` completion payload |
 | Medium | UI lift remaining pages — newscan / scaninfo / opts / error |
 | Low | `sfp_ohdeere_maps` /nearby extension |

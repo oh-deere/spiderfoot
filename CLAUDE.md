@@ -101,7 +101,7 @@ The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-desi
 Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster via a shared OAuth2 client helper. All seven silently no-op when credentials are unset, so the modules are safe to ship anywhere.
 
 **Shared helpers:**
-- `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset.
+- `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset. Per-scope `pybreaker.CircuitBreaker` opens after 5 consecutive `OhDeereServerError` (network + 5xx) and short-circuits for a 60s cooldown — auth failures (`OhDeereAuthError`) and generic 4xx (`OhDeereClientError`) pass through without counting.
 - `spiderfoot/ohdeere_llm.py` — submit + poll wrapper on top of `ohdeere_client`, tailored to the `ohdeere-llm-gateway` async-serial job queue. `run_prompt()` is blocking and returns the model's response string. Raises `OhDeereLLMTimeout` / `OhDeereLLMFailure` on typed errors.
 
 **Consumer modules (all `FREE_NOAUTH_UNLIMITED` — internal services, user controls quota):**
