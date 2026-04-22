@@ -9,15 +9,16 @@ const __dirname = path.dirname(__filename);
 
 const FIXTURE_DIR = path.resolve(__dirname, 'fixtures');
 const SEED_SCRIPT = path.resolve(FIXTURE_DIR, 'seed_db.py');
-const DB_PATH = path.resolve(FIXTURE_DIR, 'spiderfoot-e2e', 'spiderfoot.db');
+const DATABASE_URL = 'postgresql://spiderfoot:dev@localhost:55432/spiderfoot';
 
 test.describe('Clone scan (M5)', () => {
   // Earlier specs mutate the fixture DB (02-empty-state wipes it,
   // 03-new-scan adds one row). Reseed so "monthly-recon" is present.
-  // --reseed keeps the SQLite file intact while replacing its rows.
+  // --reseed TRUNCATEs the scan tables and re-inserts the fixture rows.
   test.beforeAll(() => {
-    const result = spawnSync('python3', [SEED_SCRIPT, DB_PATH, '--reseed'], {
+    const result = spawnSync('python3', [SEED_SCRIPT, '--reseed'], {
       stdio: 'inherit',
+      env: { ...process.env, SPIDERFOOT_DATABASE_URL: DATABASE_URL },
     });
     if (result.status !== 0) {
       throw new Error(`seed_db.py --reseed failed (exit ${result.status})`);

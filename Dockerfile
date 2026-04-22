@@ -44,6 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc git curl swig \
         libssl-dev libffi-dev libxslt1-dev libxml2-dev \
         libjpeg-dev zlib1g-dev libopenjp2-7-dev \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -68,6 +69,7 @@ ENV SPIDERFOOT_LOG_FILES=false
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libxslt1.1 libxml2 libjpeg62-turbo zlib1g libopenjp2-7 \
+        libpq5 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd spiderfoot \
     && useradd -m -g spiderfoot -d /home/spiderfoot -s /sbin/nologin \

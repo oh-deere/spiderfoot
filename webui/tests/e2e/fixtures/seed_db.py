@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
-"""Seed a SpiderFoot SQLite DB with deterministic scan rows for Playwright E2E.
+"""Seed a SpiderFoot Postgres DB with deterministic scan rows for Playwright E2E.
 
 Usage:
-    python3 seed_db.py <db-path>           # 5 deterministic scans (fresh DB)
-    python3 seed_db.py <db-path> --empty   # just build the schema, no rows
-    python3 seed_db.py <db-path> --clear   # wipe rows from an existing DB
-    python3 seed_db.py <db-path> --reseed  # clear + insert deterministic scans
-                                           # without removing the DB file
+    SPIDERFOOT_DATABASE_URL=postgresql://... python3 seed_db.py             # 5 deterministic scans
+    SPIDERFOOT_DATABASE_URL=postgresql://... python3 seed_db.py --empty     # just build the schema, no rows
+    SPIDERFOOT_DATABASE_URL=postgresql://... python3 seed_db.py --clear     # wipe rows from an existing DB
+    SPIDERFOOT_DATABASE_URL=postgresql://... python3 seed_db.py --reseed    # clear + insert deterministic scans
 
-The schema is created via SpiderFootDb(init=True). The scan timestamps are
-stored in milliseconds (SpiderFootDb stores ``time.time() * 1000``); the
-``ROUND(i.started)/1000`` divisions in ``scanInstanceList`` confirm that.
+Schema is owned by Alembic — ``run_alembic_upgrade`` is always invoked so
+a fresh database gets the full schema before we insert. Timestamps are
+stored in milliseconds (SpiderFootDb stores ``time.time() * 1000``).
 
---reseed exists because the E2E sf.py process keeps the SQLite file open for
-the whole run; removing the file and re-init'ing (the default mode) races
-with that connection. --reseed instead deletes rows via the existing handle
-and re-inserts the same fixtures.
+--clear / --reseed use TRUNCATE ... RESTART IDENTITY CASCADE for speed —
+the Postgres server does not hold the DB "open" the way SQLite did, so
+TRUNCATE is safe to run while sf.py is serving. ``tbl_config`` and
+``tbl_event_types`` are preserved; they hold seed metadata owned by the
+Alembic migration, not test fixture data.
 """
 import os
 import sys
 import time
 import uuid
 
+import psycopg2
+
 # Make the repository root importable so we can reuse SpiderFootDb for
-# schema creation (matches the path sf.py itself uses for its DB file).
+# scan inserts and the Alembic helper for schema creation.
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 sys.path.insert(0, REPO_ROOT)
 
 from spiderfoot import SpiderFootDb  # noqa: E402
+from spiderfoot.migrations import run_alembic_upgrade  # noqa: E402
 
 
 SCANS = [
@@ -43,50 +46,81 @@ SCANS = [
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) < 2:
-        print(f"usage: {argv[0]} <db-path> [--empty|--clear]", file=sys.stderr)
+    database_url = os.environ.get("SPIDERFOOT_DATABASE_URL", "")
+    if not database_url:
+        print(
+            "SPIDERFOOT_DATABASE_URL is required (e.g. "
+            "postgresql://spiderfoot:dev@localhost:55432/spiderfoot)",
+            file=sys.stderr,
+        )
         return 2
 
-    db_path = argv[1]
-    flags = argv[2:]
+    flags = argv[1:]
+
+    # Always ensure the schema exists. Alembic is idempotent — upgrading
+    # an already-current DB is a no-op.
+    run_alembic_upgrade(database_url)
+
+    if "--empty" in flags:
+        _clear(database_url)
+        print(f"Seeded 0 scans into {database_url}")
+        return 0
 
     if "--clear" in flags:
-        # Wipe rows from an existing, possibly-open DB without rebuilding
-        # the schema. Used by the E2E empty-state spec between tests:
-        # the running sf.py holds the SQLite file, so removing and
-        # re-initialising would race with its connection.
-        db = SpiderFootDb({"__database": db_path})
-        with db.dbhLock:
-            db.dbh.execute("DELETE FROM tbl_scan_instance")
-            db.conn.commit()
-        print(f"Cleared {db_path}")
+        _clear(database_url)
+        print(f"Cleared {database_url}")
         return 0
 
     if "--reseed" in flags:
-        # Clear + re-insert the deterministic scans without touching the
-        # DB file itself — sf.py keeps it open for the whole E2E run.
-        db = SpiderFootDb({"__database": db_path})
-        _insert_scans(db, clear_first=True)
-        print(f"Reseeded {len(SCANS)} scans into {db_path}")
+        _clear(database_url)
+        _insert_scans(database_url)
+        print(f"Reseeded {len(SCANS)} scans into {database_url}")
         return 0
 
-    if os.path.exists(db_path):
-        os.remove(db_path)
-    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
-
-    # init=True creates the full schema on a fresh file.
-    db = SpiderFootDb({"__database": db_path}, init=True)
-
-    if "--empty" in flags:
-        print(f"Seeded 0 scans into {db_path}")
-        return 0
-
-    _insert_scans(db, clear_first=False)
-    print(f"Seeded {len(SCANS)} scans into {db_path}")
+    # default: wipe and re-seed so repeated runs converge on the same
+    # fixture state.
+    _clear(database_url)
+    _insert_scans(database_url)
+    print(f"Seeded {len(SCANS)} scans into {database_url}")
     return 0
 
 
-def _insert_scans(db: "SpiderFootDb", clear_first: bool) -> None:
+def _clear(url: str) -> None:
+    """TRUNCATE every scan-scoped table.
+
+    ``tbl_config`` and ``tbl_event_types`` are intentionally left alone —
+    they hold global metadata populated by the Alembic initial migration
+    and the event-type registry, not fixture data.
+
+    Args:
+        url: Postgres connection URL.
+    """
+    with psycopg2.connect(url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "TRUNCATE "
+                "tbl_scan_correlation_results_events, "
+                "tbl_scan_correlation_results, "
+                "tbl_scan_results, "
+                "tbl_scan_log, "
+                "tbl_scan_config, "
+                "tbl_scan_instance "
+                "RESTART IDENTITY CASCADE"
+            )
+        conn.commit()
+
+
+def _insert_scans(url: str) -> None:
+    """Insert the deterministic fixture scans using SpiderFootDb.
+
+    SpiderFootDb now connects to Postgres transparently; we reuse it so
+    the insert path mirrors what production code writes.
+
+    Args:
+        url: Postgres connection URL.
+    """
+    db = SpiderFootDb({"__database": url})
+
     now_ms = int(time.time() * 1000)
     qry = (
         "INSERT INTO tbl_scan_instance "
@@ -96,9 +130,6 @@ def _insert_scans(db: "SpiderFootDb", clear_first: bool) -> None:
 
     monthly_recon_guid = None
     with db.dbhLock:
-        if clear_first:
-            db.dbh.execute("DELETE FROM tbl_scan_instance")
-            db.dbh.execute("DELETE FROM tbl_scan_config")
         for name, target, status, c_off, s_off, e_off in SCANS:
             guid = str(uuid.uuid4())
             created = now_ms - c_off * 1000
@@ -107,7 +138,6 @@ def _insert_scans(db: "SpiderFootDb", clear_first: bool) -> None:
             db.dbh.execute(qry, (guid, name, target, created, started, ended, status))
             if name == "monthly-recon":
                 monthly_recon_guid = guid
-        db.conn.commit()
 
     # Minimal scan_config for monthly-recon so /clonescan returns a usable
     # prefill (the 08-clone-scan spec exercises the Clone row action).
