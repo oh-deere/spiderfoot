@@ -24,3 +24,6 @@ publicsuffixlist>=1.0,<2
 openpyxl>=3.1.5,<4
 pyyaml>=6.0.3,<7
 pybreaker>=1.4.1,<2
+psycopg2-binary>=2.9,<3
+alembic>=1.13,<2
+testcontainers[postgres]>=4.0,<5

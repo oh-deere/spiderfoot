@@ -1,5 +1,3 @@
-version: "3"
-
 # Basic usage:
 #     $ docker-compose up
 #
@@ -28,5 +26,26 @@ services:
       - "5001:5001"
     restart: unless-stopped
 
+  # Dev Postgres for SpiderFoot storage migration.
+  # Host port 55432 (not 5432) to avoid clashing with a system Postgres
+  # that some developers already run locally. Connection URL:
+  #   postgresql://spiderfoot:dev@localhost:55432/spiderfoot
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: spiderfoot
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: spiderfoot
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - spiderfoot-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spiderfoot -d spiderfoot"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
 volumes:
   spiderfoot-data:
+  spiderfoot-pg:
