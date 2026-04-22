@@ -23,10 +23,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import pybreaker
+
 _log = logging.getLogger("spiderfoot.ohdeere_client")
 
 _DEFAULT_AUTH_URL = "https://auth.ohdeere.se/oauth2/token"
 _TOKEN_REFRESH_BUFFER = 60  # seconds before expires_at to force refresh
+_DEFAULT_FAIL_MAX = 5
+_DEFAULT_RESET_TIMEOUT = 60.0  # seconds
 
 
 class OhDeereClientError(RuntimeError):
@@ -55,13 +59,21 @@ class OhDeereClient:
             to silently no-op when this is True.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        fail_max: int = _DEFAULT_FAIL_MAX,
+        reset_timeout: float = _DEFAULT_RESET_TIMEOUT,
+    ) -> None:
         self._client_id = os.environ.get("OHDEERE_CLIENT_ID", "")
         self._client_secret = os.environ.get("OHDEERE_CLIENT_SECRET", "")
         self._auth_url = os.environ.get("OHDEERE_AUTH_URL", _DEFAULT_AUTH_URL)
         self._tokens: dict[str, tuple[str, float]] = {}
         self._scope_locks: dict[str, threading.Lock] = {}
         self._scope_lock_meta = threading.Lock()
+        self._breakers: dict[str, pybreaker.CircuitBreaker] = {}
+        self._fail_max = fail_max
+        self._reset_timeout = reset_timeout
 
     @property
     def disabled(self) -> bool:
@@ -76,6 +88,37 @@ class OhDeereClient:
                 lock = threading.Lock()
                 self._scope_locks[scope] = lock
             return lock
+
+    def _breaker_for_scope(self, scope: str) -> pybreaker.CircuitBreaker:
+        """Return the per-scope CircuitBreaker, creating it on first call.
+
+        Guarded by _scope_lock_meta to make concurrent first-time access
+        safe. Trips only on OhDeereServerError (network + 5xx); the
+        auth / 4xx exception types pass through via `exclude`.
+
+        Note: OhDeereAuthError and OhDeereServerError both subclass
+        OhDeereClientError, so a plain class-based exclude list would
+        incorrectly exclude server errors too (pybreaker uses
+        ``issubclass``). A callable predicate sidesteps this — it
+        excludes only exceptions that are Auth/Client but NOT Server.
+        """
+        def _is_non_trip(exc: BaseException) -> bool:
+            return (
+                isinstance(exc, (OhDeereAuthError, OhDeereClientError))
+                and not isinstance(exc, OhDeereServerError)
+            )
+
+        with self._scope_lock_meta:
+            breaker = self._breakers.get(scope)
+            if breaker is None:
+                breaker = pybreaker.CircuitBreaker(
+                    fail_max=self._fail_max,
+                    reset_timeout=self._reset_timeout,
+                    exclude=[_is_non_trip],
+                    name=f"ohdeere:{scope}",
+                )
+                self._breakers[scope] = breaker
+            return breaker
 
     def get(self, path: str, base_url: str, scope: str,
             timeout: int = 30) -> dict:
@@ -128,12 +171,23 @@ class OhDeereClient:
 
     def _request(self, method: str, url: str, scope: str,
                  body: dict | None, timeout: int) -> dict:
-        """Public request path — no circuit breaker yet (Task 3).
+        """Public request path — protected by a per-scope circuit breaker.
 
-        Delegates to _request_unprotected until the breaker wrapper
-        is added.
+        The breaker opens after fail_max consecutive OhDeereServerError
+        raises and short-circuits further calls for reset_timeout seconds.
+        OhDeereAuthError and OhDeereClientError pass through without
+        contributing to the trip (config issues, not service outages).
         """
-        return self._request_unprotected(method, url, scope, body, timeout)
+        breaker = self._breaker_for_scope(scope)
+        try:
+            return breaker.call(
+                self._request_unprotected, method, url, scope, body, timeout,
+            )
+        except pybreaker.CircuitBreakerError as exc:
+            raise OhDeereServerError(
+                f"circuit open for scope={scope} "
+                f"(cooldown {self._reset_timeout:.0f}s)"
+            ) from exc
 
     def _request_unprotected(self, method: str, url: str, scope: str,
                              body: dict | None, timeout: int) -> dict:
