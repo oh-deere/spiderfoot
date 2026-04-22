@@ -7,7 +7,11 @@ from sqlalchemy import engine_from_config, pool
 config = context.config
 if config.config_file_name is not None:
     from logging.config import fileConfig
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False — the default True would disable
+    # every logger created before fileConfig runs (e.g.
+    # ``spiderfoot.ohdeere_client`` when tests import both modules),
+    # breaking ``assertLogs`` assertions elsewhere in the suite.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 DATABASE_URL = os.environ.get("SPIDERFOOT_DATABASE_URL", "")
 if not DATABASE_URL:

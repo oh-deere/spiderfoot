@@ -423,10 +423,13 @@ class TestSpiderFootWebUi(unittest.TestCase):
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
 
         select = "12345"
-        query = sfwebui.query(f"SELECT {select}")
+        # Postgres requires an explicit alias to name a literal column —
+        # SQLite used to echo the literal as the column name. Use AS to
+        # keep the test portable.
+        query = sfwebui.query(f"SELECT {select} AS val_{select}")
         self.assertIsInstance(query, list)
         self.assertEqual(len(query), 1)
-        self.assertEqual(str(query[0].get(select)), str(select))
+        self.assertEqual(str(query[0].get(f"val_{select}")), str(select))
 
     def test_query_invalid_query_should_return_error(self):
         """

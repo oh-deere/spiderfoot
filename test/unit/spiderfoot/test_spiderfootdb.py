@@ -1,6 +1,9 @@
 # test_spiderfootdb.py
-import pytest
+import os
 import unittest
+from unittest import mock
+
+import pytest
 
 from spiderfoot import SpiderFootDb, SpiderFootEvent
 
@@ -25,17 +28,24 @@ class TestSpiderFootDb(unittest.TestCase):
         """
         Test __init__(self, opts, init=False)
         """
-        with self.assertRaises(ValueError):
-            SpiderFootDb(dict())
+        env = dict(os.environ)
+        env.pop("SPIDERFOOT_DATABASE_URL", None)
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ValueError):
+                SpiderFootDb(dict())
 
     def test_init_argument_opts_with_empty_key___database_value_should_raise_ValueError(self):
         """
         Test __init__(self, opts, init=False)
         """
-        with self.assertRaises(ValueError):
-            opts = dict()
-            opts['__database'] = None
-            SpiderFootDb(opts)
+        # Temporarily remove SPIDERFOOT_DATABASE_URL so the fallback
+        # doesn't rescue an empty __database.
+        env = dict(os.environ)
+        env.pop("SPIDERFOOT_DATABASE_URL", None)
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ValueError):
+                opts = {"__database": None, "_some_other_key": "value"}
+                SpiderFootDb(opts)
 
     def test_init_should_create_SpiderFootDb_object(self):
         """

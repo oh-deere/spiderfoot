@@ -1,9 +1,18 @@
+import os
+
 import pytest
+
 from spiderfoot import SpiderFootHelpers
 
 
 @pytest.fixture(autouse=True)
 def default_options(request):
+    # SPIDERFOOT_DATABASE_URL is populated by the session-scoped
+    # ``postgres_url`` fixture in the repo-root ``conftest.py`` — every
+    # test invokes it transitively via the autouse
+    # ``_truncate_all_tables`` fixture.
+    database_url = os.environ.get("SPIDERFOOT_DATABASE_URL", "")
+
     request.cls.default_options = {
         '_debug': False,
         '__logging': True,  # Logging in general
@@ -14,7 +23,7 @@ def default_options(request):
         '_internettlds': 'https://publicsuffix.org/list/effective_tld_names.dat',
         '_internettlds_cache': 72,
         '_genericusers': ",".join(SpiderFootHelpers.usernamesFromWordlists(['generic-usernames'])),
-        '__database': f"{SpiderFootHelpers.dataPath()}/spiderfoot.test.db",  # note: test database file
+        '__database': database_url,
         '__modules__': None,  # List of modules. Will be set after start-up.
         '__correlationrules__': None,  # List of correlation rules. Will be set after start-up.
         '_socks1type': '',

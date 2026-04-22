@@ -23,7 +23,7 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
             '_internettlds': 'https://publicsuffix.org/list/effective_tld_names.dat',
             '_internettlds_cache': 72,
             '_genericusers': ",".join(SpiderFootHelpers.usernamesFromWordlists(['generic-usernames'])),
-            '__database': f"{SpiderFootHelpers.dataPath()}/spiderfoot.test.db",  # note: test database file
+            '__database': os.environ.get("SPIDERFOOT_DATABASE_URL", ""),  # session-scoped testcontainers Postgres
             '__modules__': None,  # List of modules. Will be set after start-up.
             '__correlationrules__': None,  # List of correlation rules. Will be set after start-up.
             '_socks1type': '',
@@ -249,9 +249,11 @@ class TestSpiderFootWebUiRoutes(helper.CPWebCase):
         self.assertInBody('"SUCCESS"')
 
     def test_query_returns_200(self):
-        self.getPage("/query?query=SELECT+1")
+        # Postgres names unaliased literal columns ``?column?`` (SQLite
+        # used to echo the literal itself), so use an explicit alias.
+        self.getPage("/query?query=SELECT+1+AS+n")
         self.assertStatus('200 OK')
-        self.assertInBody('[{"1": 1}]')
+        self.assertInBody('[{"n": 1}]')
 
     def test_startscan_invalid_scan_name_returns_error(self):
         self.getPage("/startscan?scanname=&scantarget=&modulelist=&typelist=&usecase=")

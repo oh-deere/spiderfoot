@@ -7,7 +7,6 @@ import unittest
 from logging.handlers import TimedRotatingFileHandler
 from unittest import mock
 
-from spiderfoot import SpiderFootHelpers
 from spiderfoot.logger import (
     SpiderFootJsonFormatter,
     _log_files_enabled,
@@ -147,7 +146,7 @@ def _minimal_opts():
     return {
         "_debug": False,
         "__logging": True,
-        "__database": f"{SpiderFootHelpers.dataPath()}/spiderfoot.test.db",
+        "__database": os.environ.get("SPIDERFOOT_DATABASE_URL", ""),
     }
 
 

@@ -9,6 +9,7 @@
 # Copyright:    (c) Steve Micallef 2012
 # License:      MIT
 # -----------------------------------------------------------------
+import contextlib
 import csv
 import html
 import json
@@ -1499,11 +1500,14 @@ class SpiderFootWebUi:
             return self.jsonify_error('400', "Non-SELECTs are unpredictable and not recommended.")
 
         try:
-            ret = dbh.dbh.execute(query)
-            data = ret.fetchall()
+            dbh.dbh.execute(query)
+            data = dbh.dbh.fetchall()
             columnNames = [c[0] for c in dbh.dbh.description]
             return [dict(zip(columnNames, row)) for row in data]
         except Exception as e:
+            # Roll back the failed transaction so the handle stays usable.
+            with contextlib.suppress(Exception):
+                dbh.conn.rollback()
             return self.jsonify_error('500', str(e))
 
     @cherrypy.expose

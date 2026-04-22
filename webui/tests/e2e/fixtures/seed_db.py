@@ -87,11 +87,11 @@ def main(argv: list[str]) -> int:
 
 
 def _insert_scans(db: "SpiderFootDb", clear_first: bool) -> None:
-    now_ms = time.time() * 1000
+    now_ms = int(time.time() * 1000)
     qry = (
         "INSERT INTO tbl_scan_instance "
         "(guid, name, seed_target, created, started, ended, status) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
 
     monthly_recon_guid = None

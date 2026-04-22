@@ -90,18 +90,20 @@ def _log_files_enabled() -> bool:
     return value != "false"
 
 
-class SpiderFootSqliteLogHandler(logging.Handler):
-    """Handler for logging to SQLite database.
+class SpiderFootPostgresLogHandler(logging.Handler):
+    """Handler for logging scan events to the Postgres scan_log table.
 
-    This ensure all sqlite logging is done from a single
-    process and a single database handle.
+    Feeds the per-scan "Log" tab in the SpiderFoot scan UI. The handler
+    lazily opens a ``SpiderFootDb`` connection on the first
+    ``emit()``, batches a small number of rows and flushes to the DB.
     """
 
     def __init__(self, opts: dict) -> None:
-        """TBD.
+        """Initialize the handler.
 
         Args:
-            opts (dict): TBD
+            opts (dict): SpiderFoot config (forwarded to
+                ``SpiderFootDb`` when the DB handle is lazily created).
         """
         self.opts = opts
         self.dbh = None
@@ -114,7 +116,7 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         super().__init__()
 
     def emit(self, record: 'logging.LogRecord') -> None:
-        """TBD
+        """Append a log record to the pending batch.
 
         Args:
             record (logging.LogRecord): Log event record
@@ -131,20 +133,38 @@ class SpiderFootSqliteLogHandler(logging.Handler):
                 self.logBatch()
 
     def logBatch(self):
+        """Flush the pending batch of log rows to Postgres."""
         batch = self.batch
         self.batch = []
-        if self.dbh is None:
-            # Create a new database handle when the first log batch is processed
-            self.makeDbh()
-        logResult = self.dbh.scanLogEvents(batch)
-        if logResult is False:
-            # Try to recreate database handle if insert failed
-            self.makeDbh()
-            self.dbh.scanLogEvents(batch)
+        if not batch:
+            # Nothing to flush (common at atexit on scans that never
+            # emitted a log row) — don't open a DB connection just to
+            # insert zero rows.
+            return
+        try:
+            if self.dbh is None:
+                # Create a new database handle when the first log batch is processed
+                self.makeDbh()
+            logResult = self.dbh.scanLogEvents(batch)
+            if logResult is False:
+                # Try to recreate database handle if insert failed
+                self.makeDbh()
+                self.dbh.scanLogEvents(batch)
+        except Exception:
+            # Swallow flush errors — this runs from atexit during
+            # interpreter shutdown, and test fixtures may have already
+            # torn the DB down. Raising here would pollute the output
+            # without helping anyone.
+            pass
 
     def makeDbh(self) -> None:
-        """TBD."""
+        """Open (or re-open) the backing ``SpiderFootDb`` handle."""
         self.dbh = SpiderFootDb(self.opts)
+
+
+# Backwards-compatible alias — retained for any external callers that
+# still reference the legacy SQLite class name.
+SpiderFootSqliteLogHandler = SpiderFootPostgresLogHandler
 
 
 def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.QueueListener':
@@ -211,10 +231,10 @@ def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.Queue
         handlers = []
 
     if doLogging and opts is not None:
-        sqlite_handler = SpiderFootSqliteLogHandler(opts)
-        sqlite_handler.setLevel(logLevel)
-        sqlite_handler.setFormatter(log_format)
-        handlers.append(sqlite_handler)
+        postgres_handler = SpiderFootPostgresLogHandler(opts)
+        postgres_handler.setLevel(logLevel)
+        postgres_handler.setFormatter(log_format)
+        handlers.append(postgres_handler)
     spiderFootLogListener = QueueListener(loggingQueue, *handlers)
     spiderFootLogListener.start()
     atexit.register(stop_listener, spiderFootLogListener)

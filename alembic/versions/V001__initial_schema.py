@@ -43,9 +43,18 @@ def upgrade() -> None:
         )
     """)
 
+    # NOTE: the original SQLite schema declared REFERENCES clauses for
+    # scan_instance_id and type but SQLite does not enforce FKs unless
+    # PRAGMA foreign_keys=ON is set (which SpiderFoot never did).
+    # Callers (and tests) routinely insert into child tables with
+    # instance IDs that don't exist in tbl_scan_instance yet — e.g.
+    # scanLogEvent() buffers rows before the instance is committed.
+    # We deliberately omit the FK constraints here to preserve that
+    # behaviour; scanInstanceDelete() does a manual cascading delete.
     op.execute("""
         CREATE TABLE tbl_scan_log (
-            scan_instance_id VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid),
+            id               BIGSERIAL PRIMARY KEY,
+            scan_instance_id VARCHAR NOT NULL,
             generated        BIGINT NOT NULL,
             component        VARCHAR,
             type             VARCHAR NOT NULL,
@@ -55,7 +64,7 @@ def upgrade() -> None:
 
     op.execute("""
         CREATE TABLE tbl_scan_config (
-            scan_instance_id VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid),
+            scan_instance_id VARCHAR NOT NULL,
             component        VARCHAR NOT NULL,
             opt              VARCHAR NOT NULL,
             val              VARCHAR NOT NULL
@@ -64,9 +73,9 @@ def upgrade() -> None:
 
     op.execute("""
         CREATE TABLE tbl_scan_results (
-            scan_instance_id  VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid),
+            scan_instance_id  VARCHAR NOT NULL,
             hash              VARCHAR NOT NULL,
-            type              VARCHAR NOT NULL REFERENCES tbl_event_types(event),
+            type              VARCHAR NOT NULL,
             generated         BIGINT NOT NULL,
             confidence        INTEGER NOT NULL DEFAULT 100,
             visibility        INTEGER NOT NULL DEFAULT 100,
@@ -81,7 +90,7 @@ def upgrade() -> None:
     op.execute("""
         CREATE TABLE tbl_scan_correlation_results (
             id               VARCHAR NOT NULL PRIMARY KEY,
-            scan_instance_id VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid),
+            scan_instance_id VARCHAR NOT NULL,
             title            VARCHAR NOT NULL,
             rule_risk        VARCHAR NOT NULL,
             rule_id          VARCHAR NOT NULL,
@@ -93,7 +102,7 @@ def upgrade() -> None:
 
     op.execute("""
         CREATE TABLE tbl_scan_correlation_results_events (
-            correlation_id VARCHAR NOT NULL REFERENCES tbl_scan_correlation_results(id),
+            correlation_id VARCHAR NOT NULL,
             event_hash     VARCHAR NOT NULL
         )
     """)
