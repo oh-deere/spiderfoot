@@ -135,6 +135,28 @@ def main() -> None:
     logWorkerSetup(loggingQueue)
     log = logging.getLogger(f"spiderfoot.{__name__}")
 
+    # Postgres is now the only supported storage backend. Fail loudly if the
+    # URL is missing, and run Alembic to HEAD before any SpiderFootDb code
+    # touches the schema. Both web-server and headless-scan paths go through
+    # main(), so placing the check here covers both.
+    database_url = sfConfig['__database']
+    if not database_url:
+        log.critical(
+            "SPIDERFOOT_DATABASE_URL is required. Start the dev Postgres with "
+            "`docker compose up -d postgres` then set "
+            "SPIDERFOOT_DATABASE_URL=postgresql://spiderfoot:dev@localhost:55432/spiderfoot"
+        )
+        sys.exit(1)
+
+    log.info("Running Alembic migrations ...")
+    try:
+        from spiderfoot.migrations import run_alembic_upgrade
+        run_alembic_upgrade(database_url)
+    except Exception as e:
+        log.critical(f"Alembic upgrade failed: {e}", exc_info=True)
+        sys.exit(1)
+    log.info("Alembic migrations up-to-date.")
+
     # Add descriptions of the global config options
     sfConfig['__globaloptdescs__'] = sfOptdescs
 
