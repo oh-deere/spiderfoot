@@ -23,3 +23,4 @@ cryptography>=46.0.7,<47
 publicsuffixlist>=1.0,<2
 openpyxl>=3.1.5,<4
 pyyaml>=6.0.3,<7
+pybreaker>=1.4.1,<2
