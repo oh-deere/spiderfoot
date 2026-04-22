@@ -33,7 +33,7 @@
 FROM node:22-slim AS ui-build
 WORKDIR /app
 COPY webui/package.json webui/package-lock.json webui/
-RUN cd webui && npm ci
+RUN cd webui && npm ci --legacy-peer-deps
 COPY webui/ webui/
 RUN cd webui && npm run build
 
