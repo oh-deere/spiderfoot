@@ -97,13 +97,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 
 **Shipped:**
 - **pybreaker circuit breaker for OhDeere integrations (2026-04-20)** — per-scope `pybreaker.CircuitBreaker` wraps `OhDeereClient._request`. Trips after 5 consecutive `OhDeereServerError`s; 60s cooldown. Auth / 4xx pass through unchanged. Spec: `docs/superpowers/specs/2026-04-20-pybreaker-ohdeere-client-design.md`.
-
-### Postgres storage migration
-- **What:** replace SpiderFoot's SQLite at `$SPIDERFOOT_DATA/spiderfoot.db` with Postgres. OhDeere already runs CloudNativePG.
-- **Blocker:** SpiderFoot's entire schema lives in `spiderfoot/db.py` as SQL strings; all queries are raw SQL. `SpiderFootSqliteLogHandler` is sqlite-specific. Scan concurrency model assumes per-scan SQLite file semantics.
-- **Migration options:** adapter pattern with sqlite/postgres backends, or hard cut with migration tooling (Flyway fits here — already used elsewhere in OhDeere; run migrations in an init-container before `sf.py` starts).
-- **Size:** large — own spec + plan + multi-step implementation cycle.
-- **Unlocks:** concurrent scans, cross-scan JOINs for analytics, JSONB on `RAW_RIR_DATA` (typed queries on the raw dumps), proper backup/restore, integration with other OhDeere services.
+- **Postgres storage migration (2026-04-20)** — SQLite retired; Postgres-only via `psycopg2-binary` + Alembic. Hard cut. testcontainers-python session-scoped fixture drives the pytest suite (per-xdist-worker database); docker-compose Postgres 16 on host port 55432 for local dev; CloudNativePG in cluster via `SPIDERFOOT_DATABASE_URL`. 1470 pytest unchanged. Spec: `docs/superpowers/specs/2026-04-20-postgres-storage-migration-design.md`. Follow-ups: JSONB on RAW_RIR_DATA (V002), shared psycopg2 pool for webui, scan-concurrency refactor.
 
 ### Live-scan OhDeere smoke / CLAUDE.md refresh
 - **What:** operational task — run one real scan with `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` set against a benign target; verify every sfp_ohdeere_* module produces real events against the live services. Report cluster readiness.
@@ -136,5 +130,5 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | Low | `sfp_holehe` |
 | Low | `sfp_duckduckgo` |
 | Low | Registry orphan-sweep |
-| Large | Postgres storage migration |
+| ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |
 | Parked | `sfp_ohdeere_celltower` (no event fit) |

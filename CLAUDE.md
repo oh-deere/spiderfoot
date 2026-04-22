@@ -8,9 +8,11 @@ This directory is a checkout of the upstream `smicallef/spiderfoot` OSINT tool. 
 
 ## Common commands
 
-Run the web UI (default dev target):
+Run the web UI (default dev target). Requires Postgres:
 
 ```
+docker compose up -d postgres
+export SPIDERFOOT_DATABASE_URL=postgresql://spiderfoot:dev@localhost:55432/spiderfoot
 python3 ./sf.py -l 127.0.0.1:5001
 ```
 
@@ -37,6 +39,14 @@ Lint only: `python3 -m flake8 . --count --show-source --statistics` (config in `
 Acceptance tests (Robot Framework + headless browser) live in `test/acceptance/` and require the web server running on `:5001`; see `test/README.md`.
 
 Install deps: `pip3 install -r requirements.txt`; for tests add `pip3 install -r test/requirements.txt`.
+
+## Database
+
+SpiderFoot stores all scan state in Postgres. The SQLite backend was retired in the Postgres migration milestone (2026-04-20). Local dev uses `docker-compose.yml` at the repo root (Postgres 16 on host port 55432). Cluster deployments point at CloudNativePG via a sealed secret (`SPIDERFOOT_DATABASE_URL`).
+
+Schema is managed by Alembic (`alembic/versions/`). `sf.py` runs `alembic upgrade head` on startup — fails loudly if the upgrade doesn't succeed. New migrations land as `alembic/versions/V<n>__<name>.py` files — pure-Python, raw-SQL via `op.execute(...)`. No SQLAlchemy models. `spiderfoot/migrations.py` wraps the Alembic commands for programmatic use (used by `sf.py` startup and the pytest conftest).
+
+The test suite spins up a per-session Postgres via `testcontainers[postgres]` in `conftest.py` at the repo root; each pytest-xdist worker gets its own database (`spiderfoot_test_gw0`, `gw1`, ...). An autouse fixture TRUNCATEs all tables between tests for isolation.
 
 ## Architecture
 
