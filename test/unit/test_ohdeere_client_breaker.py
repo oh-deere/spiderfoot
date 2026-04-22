@@ -17,7 +17,15 @@ from spiderfoot.ohdeere_client import (
 
 
 def _make_client(*, fail_max: int = 2, reset_timeout: float = 60.0) -> OhDeereClient:
-    """Build a fresh OhDeereClient with env vars set so .disabled is False."""
+    """Build a fresh OhDeereClient with env vars set so .disabled is False.
+
+    Args:
+        fail_max: Consecutive failures before the per-scope breaker opens.
+        reset_timeout: Seconds the breaker stays open before half-opening.
+
+    Returns:
+        OhDeereClient: test fixture with stubbed credentials.
+    """
     client = OhDeereClient(fail_max=fail_max, reset_timeout=reset_timeout)
     # Bypass the env-var check; tests don't hit the real token endpoint.
     client._client_id = "test-client-id"

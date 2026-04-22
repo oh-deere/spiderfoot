@@ -94,13 +94,13 @@ class OhDeereClient:
 
         Guarded by _scope_lock_meta to make concurrent first-time access
         safe. Trips only on OhDeereServerError (network + 5xx); the
-        auth / 4xx exception types pass through via `exclude`.
+        auth / 4xx exception types pass through via an ``exclude`` predicate.
 
-        Note: OhDeereAuthError and OhDeereServerError both subclass
-        OhDeereClientError, so a plain class-based exclude list would
-        incorrectly exclude server errors too (pybreaker uses
-        ``issubclass``). A callable predicate sidesteps this — it
-        excludes only exceptions that are Auth/Client but NOT Server.
+        Args:
+            scope: OAuth scope the breaker guards (e.g. ``geoip:read``).
+
+        Returns:
+            pybreaker.CircuitBreaker: singleton breaker for this scope.
         """
         def _is_non_trip(exc: BaseException) -> bool:
             return (
@@ -173,10 +173,26 @@ class OhDeereClient:
                  body: dict | None, timeout: int) -> dict:
         """Public request path — protected by a per-scope circuit breaker.
 
-        The breaker opens after fail_max consecutive OhDeereServerError
-        raises and short-circuits further calls for reset_timeout seconds.
+        The breaker opens after ``fail_max`` consecutive OhDeereServerError
+        raises and short-circuits further calls for ``reset_timeout`` seconds.
         OhDeereAuthError and OhDeereClientError pass through without
         contributing to the trip (config issues, not service outages).
+
+        Args:
+            method: HTTP method (``GET`` or ``POST``).
+            url: Fully-qualified target URL.
+            scope: OAuth2 scope the per-scope breaker is keyed on.
+            body: JSON-serializable request body, or None for GETs.
+            timeout: Request timeout in seconds passed to urlopen.
+
+        Returns:
+            Parsed JSON response body.
+
+        Raises:
+            OhDeereServerError: Either a real HTTP failure propagated
+                from the unprotected path, or the breaker is open for
+                this scope (translated from CircuitBreakerError so callers
+                don't need pybreaker awareness).
         """
         breaker = self._breaker_for_scope(scope)
         try:
