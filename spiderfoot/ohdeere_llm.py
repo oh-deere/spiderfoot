@@ -39,7 +39,7 @@ def run_prompt(
     prompt: str,
     *,
     base_url: str,
-    model: str = "gemma3:4b",
+    model: str = "gemma4:e4b",
     options: "dict | None" = None,
     timeout_s: int = 300,
     client: "OhDeereClient | None" = None,
@@ -50,7 +50,7 @@ def run_prompt(
         prompt: The user prompt. Truncated to 200 000 chars with a WARNING log
             if longer.
         base_url: Base URL of ohdeere-llm-gateway.
-        model: Ollama model tag. Defaults to ``gemma3:4b``.
+        model: Ollama model tag. Defaults to ``gemma4:e4b``.
         options: Optional pass-through options dict for the gateway.
         timeout_s: Wall-clock budget in seconds before raising OhDeereLLMTimeout.
         client: Optional OhDeereClient to inject (mainly for tests).

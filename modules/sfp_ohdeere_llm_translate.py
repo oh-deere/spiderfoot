@@ -61,7 +61,7 @@ class sfp_ohdeere_llm_translate(SpiderFootPlugin):
 
     opts = {
         "llm_base_url": "https://llm.ohdeere.internal",
-        "model": "gemma3:4b",
+        "model": "gemma4:e4b",
         "timeout_s": 120,
         "max_content_length": 15000,
         "max_events": 20,
@@ -70,7 +70,7 @@ class sfp_ohdeere_llm_translate(SpiderFootPlugin):
 
     optdescs = {
         "llm_base_url": "Base URL of the ohdeere-llm-gateway.",
-        "model": "Ollama model tag (default gemma3:4b).",
+        "model": "Ollama model tag (default gemma4:e4b).",
         "timeout_s": "Per-translation wall-clock timeout in seconds.",
         "max_content_length": "Max characters to translate per event "
                               "(default 15000).",

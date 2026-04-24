@@ -62,14 +62,14 @@ class sfp_ohdeere_llm_summary(SpiderFootPlugin):
 
     opts = {
         "llm_base_url": "https://llm.ohdeere.internal",
-        "model": "gemma3:4b",
+        "model": "gemma4:e4b",
         "timeout_s": 300,
         "max_events_per_type": 25,
     }
 
     optdescs = {
         "llm_base_url": "Base URL of the ohdeere-llm-gateway.",
-        "model": "Ollama model tag (default gemma3:4b). Upgrade to a larger "
+        "model": "Ollama model tag (default gemma4:e4b). Upgrade to a larger "
                  "model for better summary quality.",
         "timeout_s": "Per-job wall-clock timeout in seconds (default 300).",
         "max_events_per_type": "Max representative events per event type in "
