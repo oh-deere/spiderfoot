@@ -79,7 +79,7 @@ class TestModuleOhDeereGeoip(unittest.TestCase):
         data_by_type = {e.eventType: e.data for e in emissions}
         self.assertEqual(data_by_type["COUNTRY_NAME"], "United States")
         self.assertEqual(data_by_type["GEOINFO"], "San Francisco, United States")
-        self.assertEqual(data_by_type["PHYSICAL_COORDINATES"], "37.77,-122.42")
+        self.assertIn("37.77,-122.42", data_by_type["PHYSICAL_COORDINATES"])
         self.assertEqual(data_by_type["BGP_AS_OWNER"], "Cloudflare, Inc.")
 
     def test_nullable_country_skips_country_and_geoinfo(self):
@@ -191,3 +191,19 @@ class TestModuleOhDeereGeoip(unittest.TestCase):
             module.handleEvent(self._ip_event(value="1.2.3.4"))
             module.handleEvent(self._ip_event(value="5.6.7.8"))
         self.assertEqual(client.get.call_count, 1)
+
+    def test_physical_coordinates_carries_maps_deeplink(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.return_value = _full_payload()
+        sf, module = self._module(client)
+        emitted = []
+        module.notifyListeners = lambda evt: emitted.append(evt)
+        module.handleEvent(self._ip_event())
+        coord_events = [e for e in emitted
+                        if e.eventType == "PHYSICAL_COORDINATES"]
+        self.assertEqual(len(coord_events), 1)
+        self.assertIn(
+            "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
+            coord_events[0].data,
+        )

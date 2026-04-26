@@ -20,6 +20,7 @@ from spiderfoot.ohdeere_client import (
     OhDeereServerError,
     get_client,
 )
+from spiderfoot.ohdeere_maps_url import DEFAULT_BASE_URL, maps_deeplink
 
 
 class sfp_ohdeere_geoip(SpiderFootPlugin):
@@ -44,11 +45,15 @@ class sfp_ohdeere_geoip(SpiderFootPlugin):
 
     opts = {
         "geoip_base_url": "https://geoip.ohdeere.internal",
+        "maps_ui_base_url": DEFAULT_BASE_URL,
     }
 
     optdescs = {
         "geoip_base_url": "Base URL of the ohdeere-geoip-service. Defaults to the "
                           "cluster-internal hostname; override for local testing.",
+        "maps_ui_base_url": "Base URL of the maps web UI used to append SFURL "
+                            "deep-links to PHYSICAL_COORDINATES events. Defaults "
+                            "to the public host.",
     }
 
     errorState = False
@@ -118,7 +123,15 @@ class sfp_ohdeere_geoip(SpiderFootPlugin):
         lat = location.get("lat")
         lon = location.get("lon")
         if lat is not None and lon is not None:
-            self._emit(event, "PHYSICAL_COORDINATES", f"{lat},{lon}")
+            link = maps_deeplink(
+                float(lat), float(lon),
+                base_url=self.opts["maps_ui_base_url"],
+            )
+            self._emit(
+                event,
+                "PHYSICAL_COORDINATES",
+                f"{lat},{lon}\n<SFURL>{link}</SFURL>",
+            )
         if asn_org:
             self._emit(event, "BGP_AS_OWNER", asn_org)
 
