@@ -97,7 +97,7 @@ The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by thes
 
 ## Module inventory (audited 2026-04-20)
 
-The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). Four external IP-geolocation modules (`sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry`) were removed in the same cycle — redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend). `sfp_ipqualityscore` stays — it covers proxy/abuse reputation, not pure geolocation. The **186** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). Four external IP-geolocation modules (`sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry`) were removed in the same cycle — redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend). `sfp_ipqualityscore` stays — it covers proxy/abuse reputation, not pure geolocation. The **187** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
 
 **Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
 
@@ -137,7 +137,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 
 See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 
-### FREE_NOAUTH_UNLIMITED (96)
+### FREE_NOAUTH_UNLIMITED (97)
 
 - sfp_adguard_dns
 - sfp_ahmia
@@ -179,6 +179,7 @@ See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 - sfp_grep_app
 - sfp_h1nobbdde
 - sfp_hackertarget
+- sfp_holehe
 - sfp_isc
 - sfp_keybase
 - sfp_maltiverse

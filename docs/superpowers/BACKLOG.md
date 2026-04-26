@@ -24,11 +24,8 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - **Value:** closes the last gap for deployments that don't control a search backend.
 
 ### Holehe account-existence module (`sfp_holehe`)
-- **What:** wraps `github.com/megadose/holehe` (MIT, pip-installable, ~120 services, no API keys). Watches `EMAILADDR` events, probes against the built-in provider list, emits `ACCOUNT_EXTERNAL_OWNED` for confirmed matches. Uses password-reset/signup differential responses.
-- **Blocker:** adds a new dependency (`holehe`) — should be flagged in `requirements.txt` and Docker build.
-- **Size:** medium — one module (~180 lines), ~10 tests. Subprocess/library invocation pattern differs from HTTP modules.
-- **Flag as `invasive`:** touches third-party auth endpoints.
-- **Value:** fills the gap left by removing `sfp_haveibeenpwned` / `sfp_emailrep` / `sfp_dehashed` for "does this email have an active account anywhere" OSINT.
+- **Status:** Shipped 2026-04-26. Spec: `docs/superpowers/specs/2026-04-26-sfp-holehe-design.md`. Plan: `docs/superpowers/plans/2026-04-26-sfp-holehe.md`.
+- Library import (asyncio bridge), 121 providers, all-by-default with built-in skip list (currently empty), `max_emails=25` + `timeout_s=60` per email caps. Two-unit split: `spiderfoot/holehe_runner.py` adapter + `modules/sfp_holehe.py` glue. Hard dep `holehe>=1.61` in `requirements.txt`.
 
 ### `sfp_ohdeere_llm_adverse_media` (blocked on model upgrade)
 - **What:** per-event adverse-media extractor. Watches `LEAKSITE_CONTENT`, `DARKNET_MENTION_CONTENT`, `RAW_RIR_DATA`. Buffers in the scan, in `finish()` sends each to the LLM with a prompt like "extract allegations, legal issues, sentiment, entities, label uncertainty." Emits structured `LLM_DERIVED_RISK_FLAG` (or reuses `VULNERABILITY_DISCLOSURE`).
@@ -127,7 +124,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | Medium | UI lift remaining pages — newscan / scaninfo / opts / error |
 | Low | `sfp_ohdeere_maps` /nearby extension |
 | Low | `sfp_ohdeere_llm_entities` |
-| Low | `sfp_holehe` |
+| ~~Low~~ Done | ~~`sfp_holehe`~~ — shipped 2026-04-26 |
 | Low | `sfp_duckduckgo` |
 | Low | Registry orphan-sweep |
 | ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |
