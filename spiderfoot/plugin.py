@@ -497,9 +497,17 @@ class SpiderFootPlugin():
 
     def threadWorker(self) -> None:
         try:
-            # create new database handle since we're in our own thread
-            from spiderfoot import SpiderFootDb
-            self.setDbh(SpiderFootDb(self.opts))
+            # Reuse the scanner-injected SpiderFootDb. Postgres cursors
+            # are serialised by the class-level dbhLock, so one shared
+            # connection across module threads is correct; the previous
+            # one-fresh-connection-per-thread pattern (left over from
+            # the SQLite era) exhausted the cluster's connection slots
+            # once a scan loaded ~100 modules concurrently. Fall back
+            # to a fresh handle if none was injected (standalone test
+            # invocation).
+            if self.__sfdb__ is None:
+                from spiderfoot import SpiderFootDb
+                self.setDbh(SpiderFootDb(self.opts))
             self.sf._dbh = self.__sfdb__
 
             if not (self.incomingEventQueue and self.outgoingEventQueue):
