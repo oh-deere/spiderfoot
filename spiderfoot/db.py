@@ -16,10 +16,28 @@ import os
 import random
 import threading
 import time
+import urllib.parse
 
 import psycopg2
 
 from spiderfoot.event_types import EVENT_TYPES
+
+
+def _redact_url(url: str) -> str:
+    """Return ``url`` with any embedded password replaced by ``***``.
+
+    Used so that connection-failure messages we log or raise don't leak
+    the credential to logs/scan output. Falls back to a generic
+    placeholder if the URL can't be parsed.
+    """
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if not parsed.password:
+            return url
+        netloc = parsed.netloc.replace(f":{parsed.password}@", ":***@", 1)
+        return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
+    except Exception:
+        return "<postgres url redacted>"
 
 
 class SpiderFootDb:
@@ -76,11 +94,14 @@ class SpiderFootDb:
             ) from None
 
         self.opts = opts
+        self._closed = False
 
         try:
             self.conn = psycopg2.connect(url, connect_timeout=10)
         except Exception as e:
-            raise IOError(f"Error connecting to Postgres at {url}") from e
+            raise IOError(
+                f"Error connecting to Postgres at {_redact_url(url)}"
+            ) from e
 
         # autocommit=True — we never span multiple statements across a
         # single semantic "operation" (the only multi-statement method
@@ -91,6 +112,25 @@ class SpiderFootDb:
         # concurrent writers.
         self.conn.autocommit = True
         self.dbh = self.conn.cursor()
+
+    def __enter__(self) -> 'SpiderFootDb':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        # Safety net — if a caller forgets to close() (or use `with`),
+        # ensure the connection is closed when the instance is
+        # garbage-collected. Without this, a leaked SpiderFootDb keeps
+        # its slot on the server until the process dies.
+        # Use a bare try/except (not contextlib.suppress) because at
+        # interpreter shutdown the contextlib module may already be
+        # partially torn down.
+        try:
+            self.close()
+        except BaseException:
+            pass
 
     #
     # Back-end database operations
@@ -128,8 +168,11 @@ class SpiderFootDb:
         self.conn.commit()
 
     def close(self) -> None:
-        """Close the database cursor and connection."""
+        """Close the cursor + connection. Idempotent."""
         with self.dbhLock:
+            if self._closed:
+                return
+            self._closed = True
             with contextlib.suppress(Exception):
                 self.dbh.close()
             with contextlib.suppress(Exception):

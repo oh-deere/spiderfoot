@@ -6,6 +6,32 @@ from unittest import mock
 import pytest
 
 from spiderfoot import SpiderFootDb, SpiderFootEvent
+from spiderfoot.db import _redact_url
+
+
+class TestRedactUrl(unittest.TestCase):
+    """Connection-failure messages must not leak the password."""
+
+    def test_strips_password(self):
+        url = "postgresql://spiderfoot:s3cret@host:5432/db"
+        self.assertEqual(
+            _redact_url(url),
+            "postgresql://spiderfoot:***@host:5432/db",
+        )
+
+    def test_passwordless_url_unchanged(self):
+        url = "postgresql://spiderfoot@host:5432/db"
+        self.assertEqual(_redact_url(url), url)
+
+    def test_url_with_special_chars_in_password(self):
+        url = "postgresql://u:p%40ss%2Fword@host:5432/db"
+        self.assertNotIn("p%40ss%2Fword", _redact_url(url))
+        self.assertIn(":***@", _redact_url(url))
+
+    def test_garbage_url_does_not_raise(self):
+        # Don't crash the connection-error path on a bad URL.
+        result = _redact_url("not a url at all")
+        self.assertIsInstance(result, str)
 
 
 @pytest.mark.usefixtures
