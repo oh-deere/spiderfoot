@@ -10,6 +10,8 @@
 # Licence:      MIT
 # -------------------------------------------------------------------------------
 
+from collections import Counter
+
 from spiderfoot import SpiderFootPlugin
 from spiderfoot.ohdeere_client import (
     OhDeereAuthError,
@@ -17,6 +19,11 @@ from spiderfoot.ohdeere_client import (
     OhDeereServerError,
     get_client,
 )
+
+
+_RISK_PRIORITY = {"HIGH": 3, "MEDIUM": 2, "LOW": 1, "INFO": 0}
+_TOP_TYPES_N = 5
+_TOP_FINDINGS_N = 5
 
 
 class sfp_ohdeere_notification(SpiderFootPlugin):
@@ -92,6 +99,7 @@ class sfp_ohdeere_notification(SpiderFootPlugin):
         if self._complete_notified:
             return
         self._complete_notified = True
+
         target = "this scan"
         try:
             t = self.getTarget()
@@ -99,7 +107,91 @@ class sfp_ohdeere_notification(SpiderFootPlugin):
                 target = t.targetValue
         except Exception:
             pass
-        self._notify(f"\u2705 Scan completed for {target}")
+
+        body = self._completion_message(target)
+        self._notify(body)
+
+    def _get_db(self):
+        db = getattr(self, "__sfdb__", None)
+        if db is None:
+            return getattr(self, "_SpiderFootPlugin__sfdb__", None)
+        return db
+
+    def _completion_message(self, target: str) -> str:
+        terse = f"\u2705 Scan completed for {target}"
+        try:
+            db = self._get_db()
+            if db is None:
+                return terse
+            scan_id = self.getScanId()
+            instance = db.scanInstanceGet(scan_id) or []
+            events = db.scanResultEvent(scan_id) or []
+            correlations = db.scanCorrelationList(scan_id) or []
+        except Exception as exc:
+            self.debug(f"DB unavailable for rich completion message: {exc}")
+            return terse
+
+        try:
+            duration = self._format_duration(instance)
+            counts = Counter(row[4] for row in events if len(row) > 4)
+            total_events = sum(counts.values())
+
+            lines = [terse]
+            lines.append(
+                f"*Duration:* {duration}  \u00b7  *Events:* {total_events}"
+            )
+
+            if total_events > 0:
+                lines.append("*Top event types:*")
+                for evt_type, count in counts.most_common(_TOP_TYPES_N):
+                    lines.append(f"  \u2022 {evt_type}: {count}")
+
+            top_findings = self._top_findings(correlations)
+            if top_findings:
+                lines.append("*Top findings:*")
+                for risk, title, event_count in top_findings:
+                    suffix = "event" if event_count == 1 else "events"
+                    lines.append(
+                        f"  \u2022 [{risk}] {title} \u2014 "
+                        f"{event_count} {suffix}"
+                    )
+
+            return "\n".join(lines)
+        except Exception as exc:
+            self.debug(f"failed to build rich completion message: {exc}")
+            return terse
+
+    def _format_duration(self, instance) -> str:
+        if not instance or len(instance) < 5:
+            return "unknown"
+        try:
+            started = float(instance[3])
+            ended = float(instance[4])
+        except (TypeError, ValueError):
+            return "unknown"
+        delta = ended - started
+        if delta < 0 or delta != delta:
+            return "unknown"
+        secs = int(delta)
+        h, rem = divmod(secs, 3600)
+        m, s = divmod(rem, 60)
+        if h:
+            return f"{h}h {m}m {s}s"
+        if m:
+            return f"{m}m {s}s"
+        return f"{s}s"
+
+    def _top_findings(self, correlations) -> list:
+        rows = []
+        for row in correlations or []:
+            if len(row) < 8:
+                continue
+            risk = row[3] or "INFO"
+            title = row[1] or ""
+            event_count = row[7] or 0
+            rows.append((risk, title, event_count))
+        rows.sort(key=lambda r: (-_RISK_PRIORITY.get(r[0], 0), r[1]))
+        return rows[:_TOP_FINDINGS_N]
 
     def _notify(self, body):
         body = self._append_scan_link(body)
@@ -138,7 +230,11 @@ class sfp_ohdeere_notification(SpiderFootPlugin):
             return body
         if not scan_id:
             return body
-        return f"{body} ({ui}/scaninfo?id={scan_id})"
+        link = f" ({ui}/scaninfo?id={scan_id})"
+        # Append to the first line so multi-line completion messages keep
+        # their headline-with-link shape.
+        first, sep, rest = body.partition("\n")
+        return first + link + sep + rest
 
 
 # End of sfp_ohdeere_notification class

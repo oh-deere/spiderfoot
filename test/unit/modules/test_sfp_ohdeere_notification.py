@@ -156,9 +156,9 @@ class TestModuleOhDeereNotification(unittest.TestCase):
         events = [
             ("h1", "sub.example.com", "example.com", "mod_a", "INTERNET_NAME"),
             ("h2", "alt.example.com", "example.com", "mod_a", "INTERNET_NAME"),
-            ("h3", "x.example.com",   "example.com", "mod_a", "INTERNET_NAME"),
-            ("h4", "a@example.com",   "example.com", "mod_b", "EMAILADDR"),
-            ("h5", "b@example.com",   "example.com", "mod_b", "EMAILADDR"),
+            ("h3", "x.example.com", "example.com", "mod_a", "INTERNET_NAME"),
+            ("h4", "a@example.com", "example.com", "mod_b", "EMAILADDR"),
+            ("h5", "b@example.com", "example.com", "mod_b", "EMAILADDR"),
             ("h6", "https://example.com/", "example.com", "mod_c",
              "LINKED_URL_INTERNAL"),
         ]
