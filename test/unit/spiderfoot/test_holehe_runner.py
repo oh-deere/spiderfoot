@@ -7,7 +7,6 @@ from spiderfoot.holehe_runner import HoleheHit, probe_email
 
 
 def _make_provider(name, domain, exists, rate_limit=False, raises=False, slow=False):
-    """Build a fake holehe-shaped async provider: f(email, client, out)."""
     async def f(email, client, out):
         if slow:
             await asyncio.sleep(10)
@@ -26,7 +25,6 @@ def _make_provider(name, domain, exists, rate_limit=False, raises=False, slow=Fa
 class TestProbeEmail(unittest.TestCase):
 
     def _patch_funcs(self, funcs):
-        """Patch the runner's provider-list builder to return ``funcs``."""
         return mock.patch(
             "spiderfoot.holehe_runner._get_provider_funcs",
             return_value=funcs,
