@@ -27,7 +27,7 @@ No SpiderFoot imports. Owns everything holehe-specific:
 - **Asyncio bridge.** Expose one synchronous function `probe_email(email, *, skip, timeout_s) -> list[HoleheHit]`. Internally calls `asyncio.run(_probe_email(...))`.
 - **Concurrent gather.** Inside `_probe_email`, create one shared `httpx.AsyncClient`, schedule every provider as a task, gather with `return_exceptions=True`, wrap in `asyncio.wait_for(timeout=timeout_s)`.
 - **Per-provider exception isolation.** A provider that raises (upstream holehe API change, unexpected response shape) is debug-logged and skipped; other providers continue.
-- **Result filtering.** Only collect entries where `entry.get("used") is True`. Skip `rateLimit=True`, `exists is None`, exceptions, and missing keys.
+- **Result filtering.** Only collect entries where `entry.get("exists") is True` *and* `entry.get("rateLimit") is False`. Skip rate-limited responses, `exists is False/None`, exceptions, and missing keys.
 - **Built-in skip list.** Module-level `_DEFAULT_SKIP: frozenset[str]` of providers known broken upstream. Updated as holehe evolves.
 
 ```python
