@@ -46,11 +46,12 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - Spec: `docs/superpowers/specs/2026-04-26-ohdeere-maps-nearby-design.md`.
 - Plan: `docs/superpowers/plans/2026-04-26-ohdeere-maps-nearby.md`.
 
-### `sfp_ohdeere_celltower` (parked — no event fit)
-- **What:** OpenCellID lookups. Takes MCC/MNC/LAC/CID tuples or lat/lon.
-- **Blocker:** no existing SpiderFoot event type carries cell tower identifiers; no input events means no natural event-bus flow.
-- **Size:** small if unblocked, but design question is: which event type would trigger this module?
-- **Status:** parked until a specific use case emerges (e.g. correlation with leaked call-detail records).
+### `sfp_ohdeere_celltower` — shipped 2026-04-26
+- Path A: trigger on `PHYSICAL_COORDINATES`, call `/api/v1/cgi/nearby`, emit per-tower `GEOINFO` + bulk `RAW_RIR_DATA` with map deep-links.
+- Path B: new `CGI_TOWER` event type (`"MCC,MNC,LAC,CID"`) → `/api/v1/cgi/{mcc}/{mnc}/{lac}/{cid}` → emits `PHYSICAL_COORDINATES` + `GEOINFO` + `RAW_RIR_DATA`. No in-tree producers yet; the new event type unblocks future leaked-CDR / IoT-dump parsers.
+- Reuses `spiderfoot/ohdeere_maps_url.py:maps_deeplink` and the grid-snap cache pattern from `sfp_ohdeere_maps`.
+- Spec: `docs/superpowers/specs/2026-04-26-sfp-ohdeere-celltower-design.md`.
+- Plan: `docs/superpowers/plans/2026-04-26-sfp-ohdeere-celltower.md`.
 
 ### Notification module — richer scan-complete content — shipped 2026-04-26
 - Replaces the single-line "✅ Scan completed for X" with a multi-line markdown payload: duration, total + top-5 event-type counts, top-5 risk-sorted correlation findings.
@@ -130,4 +131,4 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |
 | Low | Registry orphan-sweep |
 | ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |
-| Parked | `sfp_ohdeere_celltower` (no event fit) |
+| ~~Parked~~ Done | ~~`sfp_ohdeere_celltower`~~ — shipped 2026-04-26 |

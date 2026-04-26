@@ -97,7 +97,7 @@ The per-scan SQLite log (`SpiderFootSqliteLogHandler`) is not controlled by thes
 
 ## Module inventory (audited 2026-04-20)
 
-The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). Four external IP-geolocation modules (`sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry`) were removed in the same cycle — redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend). `sfp_ipqualityscore` stays — it covers proxy/abuse reputation, not pure geolocation. The **187** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
+The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-design.md`) culled all `COMMERCIAL_ONLY` / `PRIVATE_ONLY` modules (Tier 1, commit `c50d7bca`) and all `FREE_AUTH_*` / `FREE_NOAUTH_LIMITED` modules whose services were dead, acquired-and-paywalled, or had punitive free tiers (Tier 2, commit `2755f83e`). 48 modules total were removed. Seven new self-hosted OhDeere consumer modules were added in April 2026 (see OhDeere integration below). Four external IP-geolocation modules (`sfp_ipapico`, `sfp_ipapicom`, `sfp_ipinfo`, `sfp_ipregistry`) were removed in the same cycle — redundant with `sfp_ohdeere_geoip` (same MaxMind GeoLite2 backend). `sfp_ipqualityscore` stays — it covers proxy/abuse reputation, not pure geolocation. The **188** surviving non-storage modules are listed below, grouped by their `meta.dataSource.model` classification.
 
 **Policy:** New modules must fit one of the four `FREE_*` buckets. Modules requiring paid or private subscriptions (`COMMERCIAL_ONLY`, `PRIVATE_ONLY`) are rejected — the underlying services change hands too often and the maintenance burden outweighs the signal. Re-add a rejected category only if the user's scanning needs genuinely require it.
 
@@ -113,7 +113,8 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 - `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset. Per-scope `pybreaker.CircuitBreaker` opens after 5 consecutive `OhDeereServerError` (network + 5xx) and short-circuits for a 60s cooldown — auth failures (`OhDeereAuthError`) and generic 4xx (`OhDeereClientError`) pass through without counting.
 - `spiderfoot/ohdeere_llm.py` — submit + poll wrapper on top of `ohdeere_client`, tailored to the `ohdeere-llm-gateway` async-serial job queue. `run_prompt()` is blocking and returns the model's response string. Raises `OhDeereLLMTimeout` / `OhDeereLLMFailure` on typed errors.
 - `spiderfoot/ohdeere_vision.py` — same gateway, multimodal variant. `describe_image(image_data, prompt, ...)` posts JSON `{model, prompt, image}` (image base64-encoded) to `/api/v1/jobs` and polls to a description string. 10 MB raw input cap (`OhDeereVisionImageTooLarge`); other failures reuse the `ohdeere_llm` exception hierarchy. No consumer modules yet — building block for a future search → vision → summarize workflow.
-- `spiderfoot/ohdeere_maps_url.py` — pure formatter for MapLibre hash deep-links into the OhDeere maps web UI. `maps_deeplink(lat, lon, *, base_url, zoom)` returns `https://maps.ohdeere.se/#<zoom>/<lat>/<lon>`. Used by `sfp_ohdeere_maps` and `sfp_ohdeere_geoip` to attach `<SFURL>` to coordinate-bearing events; future `sfp_ohdeere_celltower` reuses it directly.
+- `spiderfoot/ohdeere_maps_url.py` — pure formatter for MapLibre hash deep-links into the OhDeere maps web UI. `maps_deeplink(lat, lon, *, base_url, zoom)` returns `https://maps.ohdeere.se/#<zoom>/<lat>/<lon>`. Used by `sfp_ohdeere_maps`, `sfp_ohdeere_geoip`, and `sfp_ohdeere_celltower` to attach `<SFURL>` to coordinate-bearing events.
+- `CGI_TOWER` (new ENTITY-category event type, 2026-04-26) — `"MCC,MNC,LAC,CID"` strings consumed by `sfp_ohdeere_celltower` for tower resolution. No in-tree producers yet; available for future leaked-CDR / IoT-dump parser modules.
 
 **Consumer modules (all `FREE_NOAUTH_UNLIMITED` — internal services, user controls quota):**
 
@@ -121,6 +122,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 |---|---|---|
 | `sfp_ohdeere_geoip` | `geoip:read` | `IP_ADDRESS`, `IPV6_ADDRESS` → `COUNTRY_NAME`, `GEOINFO`, `PHYSICAL_COORDINATES` (with SFURL map deep-link), `BGP_AS_OWNER`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_maps` | `maps:read` | `PHYSICAL_COORDINATES` (reverse-geocode + `/nearby` POI lookup), `PHYSICAL_ADDRESS` (forward-geocode) → `PHYSICAL_ADDRESS`, `PHYSICAL_COORDINATES`, `COUNTRY_NAME`, `GEOINFO`, `RAW_RIR_DATA`. All coordinate-bearing emissions carry SFURL deep-links into the maps web UI. `/nearby` is grid-cached (~1km) with `nearby_max_unique_cells_per_scan=25` cap. |
+| `sfp_ohdeere_celltower` | `celltower:read` | `PHYSICAL_COORDINATES` (nearby tower lookup, grid-cached ~1km, `nearby_max_unique_cells_per_scan=25` cap), `CGI_TOWER` (resolve a CGI tuple) → `PHYSICAL_COORDINATES`, `GEOINFO`, `RAW_RIR_DATA`. All emissions carry SFURL deep-links. New `CGI_TOWER` event type lets future producers (leaked-CDR parsers, IoT dumps) feed cell IDs in. |
 | `sfp_ohdeere_wiki` | `wiki:read` | `COMPANY_NAME`, `HUMAN_NAME` → `DESCRIPTION_ABSTRACT`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_search` | `search:read` | `INTERNET_NAME`, `DOMAIN_NAME` → `LINKED_URL_*`, `INTERNET_NAME` (subdomains), `EMAILADDR`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_notification` | `notifications:slack:send` | `ROOT` event + `finish()` hook → no event-bus output; Slack ping at scan start, plus a rich scan-complete ping with duration, top event-type counts, and top-5 risk-sorted correlation findings |
@@ -137,7 +139,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 
 See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 
-### FREE_NOAUTH_UNLIMITED (97)
+### FREE_NOAUTH_UNLIMITED (98)
 
 - sfp_adguard_dns
 - sfp_ahmia
@@ -186,6 +188,7 @@ See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 - sfp_mnemonic
 - sfp_multiproxy
 - sfp_myspace
+- sfp_ohdeere_celltower
 - sfp_ohdeere_geoip
 - sfp_ohdeere_llm_summary
 - sfp_ohdeere_llm_translate
