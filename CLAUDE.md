@@ -114,13 +114,14 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 - `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset. Per-scope `pybreaker.CircuitBreaker` opens after 5 consecutive `OhDeereServerError` (network + 5xx) and short-circuits for a 60s cooldown — auth failures (`OhDeereAuthError`) and generic 4xx (`OhDeereClientError`) pass through without counting.
 - `spiderfoot/ohdeere_llm.py` — submit + poll wrapper on top of `ohdeere_client`, tailored to the `ohdeere-llm-gateway` async-serial job queue. `run_prompt()` is blocking and returns the model's response string. Raises `OhDeereLLMTimeout` / `OhDeereLLMFailure` on typed errors.
 - `spiderfoot/ohdeere_vision.py` — same gateway, multimodal variant. `describe_image(image_data, prompt, ...)` posts JSON `{model, prompt, image}` (image base64-encoded) to `/api/v1/jobs` and polls to a description string. 10 MB raw input cap (`OhDeereVisionImageTooLarge`); other failures reuse the `ohdeere_llm` exception hierarchy. No consumer modules yet — building block for a future search → vision → summarize workflow.
+- `spiderfoot/ohdeere_maps_url.py` — pure formatter for MapLibre hash deep-links into the OhDeere maps web UI. `maps_deeplink(lat, lon, *, base_url, zoom)` returns `https://maps.ohdeere.se/#<zoom>/<lat>/<lon>`. Used by `sfp_ohdeere_maps` and `sfp_ohdeere_geoip` to attach `<SFURL>` to coordinate-bearing events; future `sfp_ohdeere_celltower` reuses it directly.
 
 **Consumer modules (all `FREE_NOAUTH_UNLIMITED` — internal services, user controls quota):**
 
 | Module | Scope | Watches → Emits |
 |---|---|---|
-| `sfp_ohdeere_geoip` | `geoip:read` | `IP_ADDRESS`, `IPV6_ADDRESS` → `COUNTRY_NAME`, `GEOINFO`, `PHYSICAL_COORDINATES`, `BGP_AS_OWNER`, `RAW_RIR_DATA` |
-| `sfp_ohdeere_maps` | `maps:read` | `PHYSICAL_COORDINATES` (reverse-geocode), `PHYSICAL_ADDRESS` (forward-geocode) → `PHYSICAL_ADDRESS`, `PHYSICAL_COORDINATES`, `COUNTRY_NAME`, `GEOINFO`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_geoip` | `geoip:read` | `IP_ADDRESS`, `IPV6_ADDRESS` → `COUNTRY_NAME`, `GEOINFO`, `PHYSICAL_COORDINATES` (with SFURL map deep-link), `BGP_AS_OWNER`, `RAW_RIR_DATA` |
+| `sfp_ohdeere_maps` | `maps:read` | `PHYSICAL_COORDINATES` (reverse-geocode + `/nearby` POI lookup), `PHYSICAL_ADDRESS` (forward-geocode) → `PHYSICAL_ADDRESS`, `PHYSICAL_COORDINATES`, `COUNTRY_NAME`, `GEOINFO`, `RAW_RIR_DATA`. All coordinate-bearing emissions carry SFURL deep-links into the maps web UI. `/nearby` is grid-cached (~1km) with `nearby_max_unique_cells_per_scan=25` cap. |
 | `sfp_ohdeere_wiki` | `wiki:read` | `COMPANY_NAME`, `HUMAN_NAME` → `DESCRIPTION_ABSTRACT`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_search` | `search:read` | `INTERNET_NAME`, `DOMAIN_NAME` → `LINKED_URL_*`, `INTERNET_NAME` (subdomains), `EMAILADDR`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_notification` | `notifications:slack:send` | `ROOT` event + `finish()` hook → no event-bus output; fires Slack pings at scan start + complete |

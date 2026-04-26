@@ -39,11 +39,12 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - **Size:** medium — ~180 lines, ~10 tests.
 - **Value:** deduplicates "Acme Ltd" / "Acme Limited" / "ACME Group" in scan output. Mostly useful on scans with many entity-type events.
 
-### Extend `sfp_ohdeere_maps` with `/nearby`, `/autocomplete`, `/lookup`
-- **What:** new endpoints wrapped. `/nearby` (POI lookup from coordinates) is the valuable one: "what businesses are near this IP's geolocation?"
-- **Blocker:** design decision — does POI output become `PHYSICAL_ADDRESS` or a new `NEARBY_POI` event type?
-- **Size:** small — one module, ~80 new lines on top of existing `sfp_ohdeere_maps`.
-- **Value:** high-value for geo-OSINT investigations.
+### Extend `sfp_ohdeere_maps` (`/nearby` + map deep-links) — shipped 2026-04-26
+- `/nearby` POI lookup wrapped, with grid-snap (~1km) coordinate cache and `nearby_max_unique_cells_per_scan=25` soft cap. Per-POI `GEOINFO` plus one bulk `RAW_RIR_DATA` per response.
+- New helper `spiderfoot/ohdeere_maps_url.py` exports `maps_deeplink()`; both `sfp_ohdeere_maps` and `sfp_ohdeere_geoip` append `<SFURL>` deep-links to coordinate-bearing emissions. Future `sfp_ohdeere_celltower` reuses the helper directly.
+- `/autocomplete` and `/lookup` were never on the maps gateway; spec dropped them.
+- Spec: `docs/superpowers/specs/2026-04-26-ohdeere-maps-nearby-design.md`.
+- Plan: `docs/superpowers/plans/2026-04-26-ohdeere-maps-nearby.md`.
 
 ### `sfp_ohdeere_celltower` (parked — no event fit)
 - **What:** OpenCellID lookups. Takes MCC/MNC/LAC/CID tuples or lat/lon.
@@ -122,7 +123,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | ~~Medium~~ Done | ~~`pybreaker` circuit breaker~~ — shipped 2026-04-20 |
 | Medium | Richer `sfp_ohdeere_notification` completion payload |
 | Medium | UI lift remaining pages — newscan / scaninfo / opts / error |
-| Low | `sfp_ohdeere_maps` /nearby extension |
+| ~~Low~~ Done | ~~`sfp_ohdeere_maps` /nearby extension~~ — shipped 2026-04-26 |
 | Low | `sfp_ohdeere_llm_entities` |
 | ~~Low~~ Done | ~~`sfp_holehe`~~ — shipped 2026-04-26 |
 | Low | `sfp_duckduckgo` |
