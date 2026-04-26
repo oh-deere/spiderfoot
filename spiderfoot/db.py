@@ -29,6 +29,13 @@ def _redact_url(url: str) -> str:
     Used so that connection-failure messages we log or raise don't leak
     the credential to logs/scan output. Falls back to a generic
     placeholder if the URL can't be parsed.
+
+    Args:
+        url (str): a Postgres URL, possibly containing a password.
+
+    Returns:
+        str: ``url`` with the password replaced, or a generic
+            ``<postgres url redacted>`` if parsing fails.
     """
     try:
         parsed = urllib.parse.urlparse(url)
@@ -124,10 +131,11 @@ class SpiderFootDb:
         # ensure the connection is closed when the instance is
         # garbage-collected. Without this, a leaked SpiderFootDb keeps
         # its slot on the server until the process dies.
-        # Use a bare try/except (not contextlib.suppress) because at
-        # interpreter shutdown the contextlib module may already be
-        # partially torn down.
-        try:
+        # Bare try/except instead of `contextlib.suppress(BaseException)`:
+        # at interpreter shutdown the contextlib module's globals may
+        # already have been cleared, in which case using it here would
+        # itself raise during teardown.
+        try:  # noqa: SIM105
             self.close()
         except BaseException:
             pass
