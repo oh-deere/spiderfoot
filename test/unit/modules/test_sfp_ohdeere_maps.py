@@ -356,3 +356,41 @@ class TestModuleOhDeereMaps(unittest.TestCase):
             "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
             nearby_raws[0].data,
         )
+
+    def test_nearby_cache_hit_skips_second_api_call(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.side_effect = _fake_get_routing(
+            reverse=_REVERSE_FULL, nearby=_NEARBY_RESPONSE,
+        )
+        _, module = self._module(client)
+        module.notifyListeners = lambda evt: None
+
+        # Two events that snap to the same 0.01° cell. Different ".data"
+        # strings keep _seen from short-circuiting; the cell-cache is what
+        # must intercept the second /nearby call.
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+        module.handleEvent(self._event("37.7704,-122.4203",
+                                       "PHYSICAL_COORDINATES"))
+
+        nearby_calls = [c for c in client.get.call_args_list
+                        if "/nearby" in c.args[0]]
+        self.assertEqual(len(nearby_calls), 1)
+
+    def test_nearby_cap_drops_after_threshold(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.side_effect = _fake_get_routing(
+            reverse=_REVERSE_FULL, nearby=_NEARBY_RESPONSE,
+        )
+        _, module = self._module(client)
+        module.opts["nearby_max_unique_cells_per_scan"] = 2
+        module.notifyListeners = lambda evt: None
+
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+        module.handleEvent(self._event("40.71,-74.00", "PHYSICAL_COORDINATES"))
+        module.handleEvent(self._event("51.50,-0.12", "PHYSICAL_COORDINATES"))
+
+        nearby_calls = [c for c in client.get.call_args_list
+                        if "/nearby" in c.args[0]]
+        self.assertEqual(len(nearby_calls), 2)
