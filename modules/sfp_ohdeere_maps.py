@@ -49,6 +49,10 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
     opts = {
         "maps_base_url": "https://maps.ohdeere.internal",
         "maps_ui_base_url": DEFAULT_BASE_URL,
+        "nearby_radius_m": 1000,
+        "nearby_limit": 10,
+        "nearby_categories": "",
+        "nearby_max_unique_cells_per_scan": 25,
     }
 
     optdescs = {
@@ -57,6 +61,14 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         "maps_ui_base_url": "Base URL of the maps web UI used to build SFURL "
                             "deep-links on emitted events. Defaults to the public "
                             "host; override for self-hosters.",
+        "nearby_radius_m": "Search radius in meters for /nearby POI lookup "
+                           "(default 1000).",
+        "nearby_limit": "Max POIs returned per /nearby call (default 10).",
+        "nearby_categories": "Comma-separated Nominatim categories (e.g. "
+                             "'restaurant,cafe'). Empty = all. Currently only the "
+                             "first value is sent per call.",
+        "nearby_max_unique_cells_per_scan": "Soft cap on unique grid cells (~1km "
+                                            "each) probed per scan (default 25).",
     }
 
     errorState = False
@@ -65,6 +77,7 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         self.sf = sfc
         self.errorState = False
         self._seen: set[str] = set()
+        self._nearby_cells: dict[tuple[float, float], list] = {}
         self._client = get_client()
         for opt in userOpts:
             self.opts[opt] = userOpts[opt]
@@ -92,6 +105,8 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
 
         if event.eventType == "PHYSICAL_COORDINATES":
             self._reverse_geocode(event)
+            if not self.errorState:
+                self._nearby(event)
         elif event.eventType == "PHYSICAL_ADDRESS":
             self._forward_geocode(event)
 
@@ -104,7 +119,7 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         payload = self._call(f"/api/v1/reverse?{params}")
         if payload is None:
             return
-        self._emit(event, "RAW_RIR_DATA", json.dumps(payload))
+        self._emit(event, "RAW_RIR_DATA", json.dumps(payload, ensure_ascii=False))
 
         display = payload.get("display_name")
         if display:
@@ -123,7 +138,7 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         payload = self._call(f"/api/v1/geocode?{params}")
         if payload is None:
             return
-        self._emit(event, "RAW_RIR_DATA", json.dumps(payload))
+        self._emit(event, "RAW_RIR_DATA", json.dumps(payload, ensure_ascii=False))
 
         if not isinstance(payload, list) or not payload:
             self.debug(f"geocode returned no results for: {event.data}")
@@ -135,6 +150,57 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
             self._emit_with_link(
                 event, "PHYSICAL_COORDINATES", f"{lat},{lon}", lat, lon,
             )
+
+    def _nearby(self, event):
+        lat, lon = self._parse_coords(event.data)
+        if lat is None:
+            return
+        cell = (round(lat, 2), round(lon, 2))
+        if cell in self._nearby_cells:
+            return
+
+        cap = int(self.opts["nearby_max_unique_cells_per_scan"])
+        if len(self._nearby_cells) >= cap:
+            self.debug(
+                f"hit nearby_max_unique_cells_per_scan={cap}; "
+                f"skipping cell {cell}"
+            )
+            return
+
+        params = {
+            "lat": cell[0],
+            "lon": cell[1],
+            "radius_m": int(self.opts["nearby_radius_m"]),
+            "limit": int(self.opts["nearby_limit"]),
+        }
+        category = next(
+            (c.strip() for c in self.opts["nearby_categories"].split(",")
+             if c.strip()),
+            None,
+        )
+        if category:
+            params["category"] = category
+        url = f"/api/v1/nearby?{urllib.parse.urlencode(params)}"
+        payload = self._call(url)
+        items = payload if isinstance(payload, list) else []
+        self._nearby_cells[cell] = items
+
+        self._emit_with_link(
+            event, "RAW_RIR_DATA", json.dumps(items, ensure_ascii=False),
+            cell[0], cell[1],
+        )
+
+        for item in items:
+            poi_lat = item.get("lat")
+            poi_lon = item.get("lon")
+            display = item.get("display_name")
+            if poi_lat is None or poi_lon is None or not display:
+                self.debug(f"skipping malformed POI: {item}")
+                continue
+            klass = item.get("class") or "?"
+            ptype = item.get("type") or "?"
+            data = f"{klass}:{ptype} — {display}"
+            self._emit_with_link(event, "GEOINFO", data, poi_lat, poi_lon)
 
     def _call(self, path_with_query):
         base = self.opts["maps_base_url"].rstrip("/")

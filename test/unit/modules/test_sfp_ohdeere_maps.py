@@ -39,6 +39,38 @@ _FORWARD_FULL = [
 ]
 
 
+_NEARBY_RESPONSE = [
+    {
+        "place_id": 1,
+        "lat": "37.7700",
+        "lon": "-122.4200",
+        "display_name": "Operakällaren, San Francisco",
+        "class": "amenity",
+        "type": "restaurant",
+    },
+    {
+        "place_id": 2,
+        "lat": "37.7799",
+        "lon": "-122.4199",
+        "display_name": "Civic Center BART Station, San Francisco",
+        "class": "railway",
+        "type": "station",
+    },
+]
+
+
+def _fake_get_routing(reverse=None, geocode=None, nearby=None):
+    def fake(path, **_kwargs):
+        if "/reverse" in path:
+            return reverse
+        if "/geocode" in path:
+            return geocode
+        if "/nearby" in path:
+            return [] if nearby is None else nearby
+        return None
+    return fake
+
+
 @pytest.mark.usefixtures("default_options")
 class TestModuleOhDeereMaps(unittest.TestCase):
 
@@ -92,7 +124,9 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         self.assertEqual(types.count("PHYSICAL_ADDRESS"), 1)
         self.assertEqual(types.count("COUNTRY_NAME"), 1)
         self.assertEqual(types.count("GEOINFO"), 1)
-        self.assertEqual(types.count("RAW_RIR_DATA"), 1)
+        # /reverse emits one RAW_RIR_DATA; /nearby emits another (empty list
+        # here — mock has no /nearby-shaped response). Count is two.
+        self.assertEqual(types.count("RAW_RIR_DATA"), 2)
         self.assertIn(
             "1 Market St, San Francisco, CA, United States",
             data_by_type["PHYSICAL_ADDRESS"])
@@ -207,7 +241,9 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         with mock.patch.object(module, "notifyListeners"):
             module.handleEvent(evt)
             module.handleEvent(evt)
-        self.assertEqual(client.get.call_count, 1)
+        # First event triggers /reverse + /nearby (two calls); second event
+        # short-circuits in _seen for /reverse and in _nearby_cells for /nearby.
+        self.assertEqual(client.get.call_count, 2)
 
     def test_reverse_auth_error_sets_errorstate(self):
         client = mock.MagicMock()
@@ -282,4 +318,41 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         self.assertIn(
             "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
             coord_events[0].data,
+        )
+
+    def test_nearby_emits_per_poi_geoinfo_and_one_raw_rir_data(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.side_effect = _fake_get_routing(
+            reverse=_REVERSE_FULL, nearby=_NEARBY_RESPONSE,
+        )
+        _, module = self._module(client)
+        emitted = []
+        module.notifyListeners = lambda evt: emitted.append(evt)
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+
+        nearby_calls = [c for c in client.get.call_args_list
+                        if "/nearby" in c.args[0]]
+        self.assertEqual(len(nearby_calls), 1)
+        url = nearby_calls[0].args[0]
+        self.assertIn("lat=37.77", url)
+        self.assertIn("lon=-122.42", url)
+        self.assertIn("radius_m=1000", url)
+        self.assertIn("limit=10", url)
+
+        geos = [e for e in emitted if e.eventType == "GEOINFO"
+                and "Operakällaren" in e.data]
+        self.assertEqual(len(geos), 1)
+        self.assertIn("amenity:restaurant", geos[0].data)
+        self.assertIn(
+            "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
+            geos[0].data,
+        )
+
+        nearby_raws = [e for e in emitted if e.eventType == "RAW_RIR_DATA"
+                       and "Operakällaren" in e.data]
+        self.assertEqual(len(nearby_raws), 1)
+        self.assertIn(
+            "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
+            nearby_raws[0].data,
         )
