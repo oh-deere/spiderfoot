@@ -135,6 +135,10 @@ class TestModuleDuckDuckGo(unittest.TestCase):
         body = _html_with_results([("https://example.com/", "x")])
         _, module = self._module()
         module.opts["max_pages"] = 1
+        # Stub notifyListeners — default impl walks _listenerModules which
+        # other tests in the suite leave in an inconsistent state on CI
+        # under pytest-xdist parallel runs.
+        module.notifyListeners = lambda evt: None
         with mock.patch.object(module.sf, "fetchUrl",
                                return_value=_fetch_ok(body)) as m_fetch:
             module.handleEvent(self._domain_event())
