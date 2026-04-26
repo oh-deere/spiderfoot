@@ -159,7 +159,7 @@ class TestModuleDuckDuckGo(unittest.TestCase):
         module.notifyListeners = lambda evt: emitted.append(evt)
         with mock.patch.object(module.sf, "fetchUrl",
                                return_value={"code": "500",
-                                              "content": "", "headers": {}}), \
+                                             "content": "", "headers": {}}), \
              mock.patch.object(module, "error") as m_error:
             module.handleEvent(self._domain_event())
         self.assertTrue(module.errorState)
