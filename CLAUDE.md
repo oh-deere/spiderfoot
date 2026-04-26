@@ -123,7 +123,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 | `sfp_ohdeere_maps` | `maps:read` | `PHYSICAL_COORDINATES` (reverse-geocode + `/nearby` POI lookup), `PHYSICAL_ADDRESS` (forward-geocode) → `PHYSICAL_ADDRESS`, `PHYSICAL_COORDINATES`, `COUNTRY_NAME`, `GEOINFO`, `RAW_RIR_DATA`. All coordinate-bearing emissions carry SFURL deep-links into the maps web UI. `/nearby` is grid-cached (~1km) with `nearby_max_unique_cells_per_scan=25` cap. |
 | `sfp_ohdeere_wiki` | `wiki:read` | `COMPANY_NAME`, `HUMAN_NAME` → `DESCRIPTION_ABSTRACT`, `RAW_RIR_DATA` |
 | `sfp_ohdeere_search` | `search:read` | `INTERNET_NAME`, `DOMAIN_NAME` → `LINKED_URL_*`, `INTERNET_NAME` (subdomains), `EMAILADDR`, `RAW_RIR_DATA` |
-| `sfp_ohdeere_notification` | `notifications:slack:send` | `ROOT` event + `finish()` hook → no event-bus output; fires Slack pings at scan start + complete |
+| `sfp_ohdeere_notification` | `notifications:slack:send` | `ROOT` event + `finish()` hook → no event-bus output; Slack ping at scan start, plus a rich scan-complete ping with duration, top event-type counts, and top-5 risk-sorted correlation findings |
 | `sfp_ohdeere_llm_summary` | `llm:query` | `ROOT` event + `finish()` hook → one `DESCRIPTION_ABSTRACT` summarizing the whole scan |
 | `sfp_ohdeere_llm_translate` | `llm:query` | `LEAKSITE_CONTENT`, `DARKNET_MENTION_CONTENT`, `RAW_RIR_DATA` → same event types re-emitted with translated content |
 

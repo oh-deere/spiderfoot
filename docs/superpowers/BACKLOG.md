@@ -52,11 +52,12 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 - **Size:** small if unblocked, but design question is: which event type would trigger this module?
 - **Status:** parked until a specific use case emerges (e.g. correlation with leaked call-detail records).
 
-### Notification module — richer scan-complete content
-- **What:** extend `sfp_ohdeere_notification` to include event counts, duration, top-5 riskiest findings in the scan-complete Slack ping instead of just "Scan completed for X".
-- **Blocker:** `finish()` doesn't receive scan-outcome context. Need to query SQLite (like `sfp_ohdeere_llm_summary` does) to get the stats.
-- **Size:** small — adds ~30 lines.
-- **Value:** replaces the current "dumb" completion ping with something actually informative.
+### Notification module — richer scan-complete content — shipped 2026-04-26
+- Replaces the single-line "✅ Scan completed for X" with a multi-line markdown payload: duration, total + top-5 event-type counts, top-5 risk-sorted correlation findings.
+- Falls back to the terse line on any DB-access failure so notifications stay reliable.
+- No new module options.
+- Spec: `docs/superpowers/specs/2026-04-26-sfp-ohdeere-notification-richer-design.md`.
+- Plan: `docs/superpowers/plans/2026-04-26-sfp-ohdeere-notification-richer.md`.
 
 ### Registry-sweep spec — orphan event types
 - **What:** prune event types in `spiderfoot/event_types.py` whose only producers were removed in the audit (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`). Also updates correlation rules that reference those types.
@@ -121,7 +122,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | Medium | Typed module metadata registry (spec ready) |
 | Medium | `sfp_ohdeere_llm_adverse_media` (blocked on Qwen 32B) |
 | ~~Medium~~ Done | ~~`pybreaker` circuit breaker~~ — shipped 2026-04-20 |
-| Medium | Richer `sfp_ohdeere_notification` completion payload |
+| ~~Medium~~ Done | ~~Richer `sfp_ohdeere_notification` completion payload~~ — shipped 2026-04-26 |
 | Medium | UI lift remaining pages — newscan / scaninfo / opts / error |
 | ~~Low~~ Done | ~~`sfp_ohdeere_maps` /nearby extension~~ — shipped 2026-04-26 |
 | Low | `sfp_ohdeere_llm_entities` |
