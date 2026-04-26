@@ -1807,8 +1807,17 @@ class SpiderFootWebUi:
             return []
 
         created = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data[2]))
-        started = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data[3]))
-        ended = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data[4]))
+        # data[3] (started) and data[4] (ended) are 0 when the scan hasn't
+        # reached that state yet. Render those sentinel values as readable
+        # status strings rather than 1970-01-01 epoch timestamps.
+        started = (
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data[3]))
+            if data[3] else "Pending"
+        )
+        ended = (
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data[4]))
+            if data[4] else "Running"
+        )
         riskmatrix = {
             "HIGH": 0,
             "MEDIUM": 0,
