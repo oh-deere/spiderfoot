@@ -13,7 +13,7 @@ from spiderfoot.event_types import (
 class TestEventTypes(unittest.TestCase):
 
     def test_registry_has_expected_count(self):
-        self.assertEqual(len(EVENT_TYPES), 172)
+        self.assertEqual(len(EVENT_TYPES), 173)
 
     def test_every_enum_member_has_registry_entry(self):
         missing = [e for e in EventType if e not in EVENT_TYPES]
@@ -38,7 +38,7 @@ class TestEventTypes(unittest.TestCase):
         for d in EVENT_TYPES.values():
             counts[d.category] += 1
         self.assertEqual(counts[EventTypeCategory.DESCRIPTOR], 79)
-        self.assertEqual(counts[EventTypeCategory.ENTITY], 57)
+        self.assertEqual(counts[EventTypeCategory.ENTITY], 58)
         self.assertEqual(counts[EventTypeCategory.DATA], 30)
         self.assertEqual(counts[EventTypeCategory.SUBENTITY], 5)
         self.assertEqual(counts[EventTypeCategory.INTERNAL], 1)
@@ -47,7 +47,7 @@ class TestEventTypes(unittest.TestCase):
         raw_true = sum(1 for d in EVENT_TYPES.values() if d.is_raw)
         raw_false = sum(1 for d in EVENT_TYPES.values() if not d.is_raw)
         self.assertEqual(raw_true, 17)
-        self.assertEqual(raw_false, 155)
+        self.assertEqual(raw_false, 156)
 
     def test_root_event_is_internal_category(self):
         self.assertEqual(

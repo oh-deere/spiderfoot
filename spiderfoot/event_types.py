@@ -70,6 +70,7 @@ class EventType(str, enum.Enum):
     BLACKLISTED_IPADDR = "BLACKLISTED_IPADDR"
     BLACKLISTED_NETBLOCK = "BLACKLISTED_NETBLOCK"
     BLACKLISTED_SUBNET = "BLACKLISTED_SUBNET"
+    CGI_TOWER = "CGI_TOWER"
     CLOUD_STORAGE_BUCKET = "CLOUD_STORAGE_BUCKET"
     CLOUD_STORAGE_BUCKET_OPEN = "CLOUD_STORAGE_BUCKET_OPEN"
     COMPANY_NAME = "COMPANY_NAME"
@@ -245,6 +246,7 @@ EVENT_TYPES: dict[EventType, EventTypeDef] = {
     EventType.BLACKLISTED_IPADDR: EventTypeDef("BLACKLISTED_IPADDR", "Blacklisted IP Address", EventTypeCategory.DESCRIPTOR, is_raw=False),
     EventType.BLACKLISTED_NETBLOCK: EventTypeDef("BLACKLISTED_NETBLOCK", "Blacklisted IP on Owned Netblock", EventTypeCategory.DESCRIPTOR, is_raw=False),
     EventType.BLACKLISTED_SUBNET: EventTypeDef("BLACKLISTED_SUBNET", "Blacklisted IP on Same Subnet", EventTypeCategory.DESCRIPTOR, is_raw=False),
+    EventType.CGI_TOWER: EventTypeDef("CGI_TOWER", "Cell Tower (CGI)", EventTypeCategory.ENTITY, is_raw=False),
     EventType.CLOUD_STORAGE_BUCKET: EventTypeDef("CLOUD_STORAGE_BUCKET", "Cloud Storage Bucket", EventTypeCategory.ENTITY, is_raw=False),
     EventType.CLOUD_STORAGE_BUCKET_OPEN: EventTypeDef("CLOUD_STORAGE_BUCKET_OPEN", "Cloud Storage Bucket Open", EventTypeCategory.DESCRIPTOR, is_raw=False),
     EventType.COMPANY_NAME: EventTypeDef("COMPANY_NAME", "Company Name", EventTypeCategory.ENTITY, is_raw=False),
