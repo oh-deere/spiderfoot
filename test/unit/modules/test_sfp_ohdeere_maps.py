@@ -394,3 +394,37 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         nearby_calls = [c for c in client.get.call_args_list
                         if "/nearby" in c.args[0]]
         self.assertEqual(len(nearby_calls), 2)
+
+    def test_nearby_categories_first_value_forwarded(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.side_effect = _fake_get_routing(
+            reverse=_REVERSE_FULL, nearby=[],
+        )
+        _, module = self._module(client)
+        module.opts["nearby_categories"] = "restaurant, cafe"
+        module.notifyListeners = lambda evt: None
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+
+        nearby_calls = [c for c in client.get.call_args_list
+                        if "/nearby" in c.args[0]]
+        self.assertEqual(len(nearby_calls), 1)
+        self.assertIn("category=restaurant", nearby_calls[0].args[0])
+
+    def test_nearby_malformed_response_does_not_trip_errorstate(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        # /nearby returns a dict instead of a list (malformed).
+        client.get.side_effect = _fake_get_routing(
+            reverse=_REVERSE_FULL, nearby={"unexpected": "shape"},
+        )
+        _, module = self._module(client)
+        emitted = []
+        module.notifyListeners = lambda evt: emitted.append(evt)
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+
+        self.assertFalse(module.errorState)
+        # No POI GEOINFO from /nearby (em-dash is the POI-format marker).
+        nearby_geos = [e for e in emitted if e.eventType == "GEOINFO"
+                       and "—" in e.data]
+        self.assertEqual(nearby_geos, [])
