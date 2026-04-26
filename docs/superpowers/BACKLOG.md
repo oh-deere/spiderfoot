@@ -17,11 +17,11 @@ Consolidated list of deferred work as of **2026-04-20**. Each entry notes whethe
 
 ## Ready for implementation (no spec yet)
 
-### `sfp_duckduckgo` — zero-config search fallback
-- **What:** HTML-scrape module against `html.duckduckgo.com/html/` for users who don't run SearXNG or the OhDeere stack. Same inputs/outputs as `sfp_searxng`.
-- **Blocker:** none.
-- **Size:** medium — one module, ~150 lines. Scrape-fragile (DDG may change markup). Would want a gentle fallback when DDG returns empty.
-- **Value:** closes the last gap for deployments that don't control a search backend.
+### `sfp_duckduckgo` HTML scraper — shipped 2026-04-26
+- Replaced the 2015-vintage Instant Answer wrapper with an HTML scrape of `html.duckduckgo.com/html/`. Same event outputs as `sfp_searxng`. Zero-config — no API key, no self-hosted backend required.
+- Anti-scrape detection bails on DDG's `anomaly-modal` CAPTCHA wrapper; sets `errorState` for the rest of the scan.
+- Spec: `docs/superpowers/specs/2026-04-26-sfp-duckduckgo-design.md`.
+- Plan: `docs/superpowers/plans/2026-04-26-sfp-duckduckgo.md`.
 
 ### Holehe account-existence module (`sfp_holehe`)
 - **Status:** Shipped 2026-04-26. Spec: `docs/superpowers/specs/2026-04-26-sfp-holehe-design.md`. Plan: `docs/superpowers/plans/2026-04-26-sfp-holehe.md`.
@@ -108,7 +108,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 ## Search alternatives
 - `sfp_searxng` — self-hosted SearXNG (shipped 2026-04-20).
 - `sfp_ohdeere_search` — auth-gated OhDeere wrapper around SearXNG (shipped 2026-04-20).
-- `sfp_duckduckgo` — zero-config scrape fallback (see "Ready for implementation").
+- `sfp_duckduckgo` — zero-config HTML scrape of html.duckduckgo.com/html/ (shipped 2026-04-26).
 
 ---
 
@@ -126,7 +126,7 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | ~~Low~~ Done | ~~`sfp_ohdeere_maps` /nearby extension~~ — shipped 2026-04-26 |
 | Low | `sfp_ohdeere_llm_entities` |
 | ~~Low~~ Done | ~~`sfp_holehe`~~ — shipped 2026-04-26 |
-| Low | `sfp_duckduckgo` |
+| ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |
 | Low | Registry orphan-sweep |
 | ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |
 | Parked | `sfp_ohdeere_celltower` (no event fit) |

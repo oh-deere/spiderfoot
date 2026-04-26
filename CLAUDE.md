@@ -103,7 +103,6 @@ The dead-module audit (`docs/superpowers/specs/2026-04-20-dead-module-audit-desi
 
 **Known gaps / follow-ups (tracked in `docs/superpowers/BACKLOG.md`):**
 - **Orphaned event types:** a handful of event types (e.g. `HASH_COMPROMISED`, `PHONE_NUMBER_COMPROMISED`) have no remaining producer after the audit. Deferred to a future registry-sweep spec.
-- **DuckDuckGo scrape fallback:** zero-config search option for users without SearXNG or the OhDeere stack. Backlog.
 - **Typed module metadata registry (Phase 1 item 2):** spec at `docs/superpowers/specs/2026-04-20-typed-module-metadata-design.md` is written, parked before implementation in favor of OhDeere modules. Ready to pick up.
 
 ## OhDeere integration
