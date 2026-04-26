@@ -113,6 +113,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 **Shared helpers:**
 - `spiderfoot/ohdeere_client.py` — OAuth2 client-credentials helper. Process-wide singleton with per-scope token cache, thread-safe. Reads `OHDEERE_CLIENT_ID` / `OHDEERE_CLIENT_SECRET` / `OHDEERE_AUTH_URL` env vars. `.get()` / `.post()` surface; `.disabled = True` when env vars unset. Per-scope `pybreaker.CircuitBreaker` opens after 5 consecutive `OhDeereServerError` (network + 5xx) and short-circuits for a 60s cooldown — auth failures (`OhDeereAuthError`) and generic 4xx (`OhDeereClientError`) pass through without counting.
 - `spiderfoot/ohdeere_llm.py` — submit + poll wrapper on top of `ohdeere_client`, tailored to the `ohdeere-llm-gateway` async-serial job queue. `run_prompt()` is blocking and returns the model's response string. Raises `OhDeereLLMTimeout` / `OhDeereLLMFailure` on typed errors.
+- `spiderfoot/ohdeere_vision.py` — same gateway, multimodal variant. `describe_image(image_data, prompt, ...)` posts JSON `{model, prompt, image}` (image base64-encoded) to `/api/v1/jobs` and polls to a description string. 10 MB raw input cap (`OhDeereVisionImageTooLarge`); other failures reuse the `ohdeere_llm` exception hierarchy. No consumer modules yet — building block for a future search → vision → summarize workflow.
 
 **Consumer modules (all `FREE_NOAUTH_UNLIMITED` — internal services, user controls quota):**
 
