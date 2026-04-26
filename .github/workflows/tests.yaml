@@ -13,7 +13,11 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12", "3.13"]
-        os: [ubuntu-latest, macos-latest]
+        # macOS dropped 2026-04-26: GHA macOS runners have no Docker, so
+        # testcontainers-postgres (used by the Postgres conftest fixture)
+        # cannot start. SpiderFoot deploys as a Linux container — macOS is
+        # not a supported runtime.
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
