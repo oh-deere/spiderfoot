@@ -20,6 +20,7 @@ from spiderfoot.ohdeere_client import (
     OhDeereServerError,
     get_client,
 )
+from spiderfoot.ohdeere_maps_url import DEFAULT_BASE_URL, maps_deeplink
 
 
 class sfp_ohdeere_maps(SpiderFootPlugin):
@@ -47,11 +48,15 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
 
     opts = {
         "maps_base_url": "https://maps.ohdeere.internal",
+        "maps_ui_base_url": DEFAULT_BASE_URL,
     }
 
     optdescs = {
         "maps_base_url": "Base URL of the ohdeere-maps-service. Defaults to the "
                          "cluster-internal hostname; override for local testing.",
+        "maps_ui_base_url": "Base URL of the maps web UI used to build SFURL "
+                            "deep-links on emitted events. Defaults to the public "
+                            "host; override for self-hosters.",
     }
 
     errorState = False
@@ -103,7 +108,7 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
 
         display = payload.get("display_name")
         if display:
-            self._emit(event, "PHYSICAL_ADDRESS", display)
+            self._emit_with_link(event, "PHYSICAL_ADDRESS", display, lat, lon)
 
         address = payload.get("address") or {}
         country = address.get("country")
@@ -111,7 +116,7 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         if country:
             self._emit(event, "COUNTRY_NAME", country)
             geoinfo = f"{city}, {country}" if city else country
-            self._emit(event, "GEOINFO", geoinfo)
+            self._emit_with_link(event, "GEOINFO", geoinfo, lat, lon)
 
     def _forward_geocode(self, event):
         params = urllib.parse.urlencode({"q": event.data, "limit": 1})
@@ -127,7 +132,9 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         lat = first.get("lat")
         lon = first.get("lon")
         if lat is not None and lon is not None:
-            self._emit(event, "PHYSICAL_COORDINATES", f"{lat},{lon}")
+            self._emit_with_link(
+                event, "PHYSICAL_COORDINATES", f"{lat},{lon}", lat, lon,
+            )
 
     def _call(self, path_with_query):
         base = self.opts["maps_base_url"].rstrip("/")
@@ -159,6 +166,14 @@ class sfp_ohdeere_maps(SpiderFootPlugin):
         except (ValueError, IndexError):
             return None, None
         return lat, lon
+
+    def _emit_with_link(self, source_event, event_type: str, data: str,
+                        lat, lon) -> None:
+        link = maps_deeplink(
+            float(lat), float(lon),
+            base_url=self.opts["maps_ui_base_url"],
+        )
+        self._emit(source_event, event_type, f"{data}\n<SFURL>{link}</SFURL>")
 
     def _emit(self, source_event, event_type: str, data: str) -> None:
         evt = SpiderFootEvent(event_type, data, self.__name__, source_event)

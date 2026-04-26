@@ -93,12 +93,12 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         self.assertEqual(types.count("COUNTRY_NAME"), 1)
         self.assertEqual(types.count("GEOINFO"), 1)
         self.assertEqual(types.count("RAW_RIR_DATA"), 1)
-        self.assertEqual(
-            data_by_type["PHYSICAL_ADDRESS"],
-            "1 Market St, San Francisco, CA, United States")
+        self.assertIn(
+            "1 Market St, San Francisco, CA, United States",
+            data_by_type["PHYSICAL_ADDRESS"])
         self.assertEqual(data_by_type["COUNTRY_NAME"], "United States")
-        self.assertEqual(data_by_type["GEOINFO"],
-                         "San Francisco, United States")
+        self.assertIn("San Francisco, United States",
+                      data_by_type["GEOINFO"])
 
     def test_reverse_no_display_name_emits_only_raw(self):
         client = mock.MagicMock()
@@ -134,7 +134,7 @@ class TestModuleOhDeereMaps(unittest.TestCase):
             module.handleEvent(
                 self._event("40.0,-80.0", "PHYSICAL_COORDINATES"))
         data_by_type = {e.eventType: e.data for e in emissions}
-        self.assertEqual(data_by_type["GEOINFO"], "Smalltown, United States")
+        self.assertIn("Smalltown, United States", data_by_type["GEOINFO"])
 
     def test_reverse_no_city_falls_back_to_country_only(self):
         client = mock.MagicMock()
@@ -151,7 +151,7 @@ class TestModuleOhDeereMaps(unittest.TestCase):
             module.handleEvent(
                 self._event("-75.0,0.0", "PHYSICAL_COORDINATES"))
         data_by_type = {e.eventType: e.data for e in emissions}
-        self.assertEqual(data_by_type["GEOINFO"], "Antarctica")
+        self.assertIn("Antarctica", data_by_type["GEOINFO"])
 
     def test_reverse_malformed_coords_skipped_without_api_call(self):
         client = mock.MagicMock()
@@ -180,7 +180,7 @@ class TestModuleOhDeereMaps(unittest.TestCase):
         data_by_type = {e.eventType: e.data for e in emissions}
         self.assertEqual(types.count("PHYSICAL_COORDINATES"), 1)
         self.assertEqual(types.count("RAW_RIR_DATA"), 1)
-        self.assertEqual(data_by_type["PHYSICAL_COORDINATES"], "37.77,-122.42")
+        self.assertIn("37.77,-122.42", data_by_type["PHYSICAL_COORDINATES"])
 
     def test_forward_empty_results_emits_only_raw(self):
         client = mock.MagicMock()
@@ -251,3 +251,35 @@ class TestModuleOhDeereMaps(unittest.TestCase):
             module.handleEvent(
                 self._event("1 Market St", "PHYSICAL_ADDRESS"))
         self.assertEqual(client.get.call_count, 1)
+
+    def test_reverse_geocode_appends_maps_deeplink_to_address(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.return_value = _REVERSE_FULL
+        _, module = self._module(client)
+        emitted = []
+        module.notifyListeners = lambda evt: emitted.append(evt)
+        module.handleEvent(self._event("37.77,-122.42", "PHYSICAL_COORDINATES"))
+        addr_events = [e for e in emitted if e.eventType == "PHYSICAL_ADDRESS"]
+        self.assertEqual(len(addr_events), 1)
+        self.assertIn(
+            "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
+            addr_events[0].data,
+        )
+
+    def test_forward_geocode_appends_maps_deeplink_to_coordinates(self):
+        client = mock.MagicMock()
+        client.disabled = False
+        client.get.return_value = _FORWARD_FULL
+        _, module = self._module(client)
+        emitted = []
+        module.notifyListeners = lambda evt: emitted.append(evt)
+        module.handleEvent(
+            self._event("1 Market St, San Francisco", "PHYSICAL_ADDRESS"),
+        )
+        coord_events = [e for e in emitted if e.eventType == "PHYSICAL_COORDINATES"]
+        self.assertEqual(len(coord_events), 1)
+        self.assertIn(
+            "<SFURL>https://maps.ohdeere.se/#15/37.77/-122.42</SFURL>",
+            coord_events[0].data,
+        )
