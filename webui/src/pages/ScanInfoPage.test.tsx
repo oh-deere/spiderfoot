@@ -47,7 +47,7 @@ describe('ScanInfoPage', () => {
               'example.com',
               '2026-04-20 10:00:00',
               '2026-04-20 10:00:01',
-              status === 'FINISHED' ? '2026-04-20 10:10:00' : 'Not yet',
+              status === 'FINISHED' ? '2026-04-20 10:10:00' : 'Running',
               status,
               { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 },
             ]),

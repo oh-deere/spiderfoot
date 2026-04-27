@@ -81,7 +81,7 @@ describe('ScanListPage', () => {
             '2026-04-20 10:00:01', '2026-04-20 10:10:00', 'FINISHED', 5,
             { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }],
           ['b', 'alive', 'l.example', '2026-04-20 10:00:00',
-            '2026-04-20 10:00:01', 'Not yet', 'RUNNING', 2,
+            '2026-04-20 10:00:01', 'Running', 'RUNNING', 2,
             { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }],
         ]),
         { status: 200 },

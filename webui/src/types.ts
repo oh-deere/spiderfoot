@@ -20,8 +20,8 @@ export type Scan = {
   name: string;
   target: string;
   created: string;          // formatted date string, e.g. "2026-04-20 14:23:15"
-  started: string;          // formatted date string OR literal "Not yet"
-  finished: string;         // formatted date string OR literal "Not yet"
+  started: string;          // formatted date string OR literal "Pending"
+  finished: string;         // formatted date string OR literal "Running"
   status: ScanStatus;
   eventCount: number;
   riskMatrix: RiskMatrix;

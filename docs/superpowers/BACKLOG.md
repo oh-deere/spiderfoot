@@ -144,10 +144,9 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 - **Value:** estimated 30-50 % reduction in scan time on IP-heavy targets.
 - **Status:** parked — only worth doing once the simpler hygiene items are done.
 
-### UI: scan list shows "Running" inline (consistency follow-up)
-- **What:** `scanlist` currently renders `started/ended=0` as `"Not yet"`; `scanstatus` (after `7a0a1fcc`) renders as `Pending`/`Running`. Different surface, but worth aligning eventually so the same sentinel reads the same way everywhere.
-- **Size:** trivial — pick one wording, replace in `sfwebui.py` `scanlist`.
-- **Value:** cosmetic consistency.
+### UI: scan list shows "Running" inline — shipped 2026-04-27
+- `scanlist` and `scanopts` now render `started=0` as `"Pending"` and `finished=0`/`ended=0` as `"Running"`, matching the convention `scanstatus` adopted in `7a0a1fcc`. Same sentinel, same wording, every surface.
+- SPA tests + `Scan` type comment updated to reflect new sentinels.
 
 ---
 
@@ -177,7 +176,7 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 | ~~Low~~ Done | ~~Cull `sfp_torch` (dead onion)~~ — shipped 2026-04-27 |
 | Low | External-service maintenance pass (crobat / coinblocker / crt / commoncrawl / searchcode / dnsdumpster / subdomain_takeover) |
 | ~~Low~~ Done | ~~Demote misconfigured-module ERROR → WARNING~~ — shipped 2026-04-27 |
-| Low | UI: `scanlist` "Not yet" → "Pending"/"Running" alignment |
+| ~~Low~~ Done | ~~UI: `scanlist` "Not yet" → "Pending"/"Running" alignment~~ — shipped 2026-04-27 |
 | ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |
 | Low | Registry orphan-sweep |
 | ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |

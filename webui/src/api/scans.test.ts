@@ -49,7 +49,7 @@ describe('listScans', () => {
     ]);
   });
 
-  it('handles the "Not yet" sentinel in started/finished for un-started scans', async () => {
+  it('handles the "Pending"/"Running" sentinels in started/finished for un-started or running scans', async () => {
     (globalThis.fetch as Mock).mockResolvedValue(
       new Response(
         JSON.stringify([
@@ -58,8 +58,8 @@ describe('listScans', () => {
             'queued',
             'example.com',
             '2026-04-20 10:00:00',
-            'Not yet',
-            'Not yet',
+            'Pending',
+            'Running',
             'CREATED',
             0,
             { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 },
@@ -69,8 +69,8 @@ describe('listScans', () => {
       ),
     );
     const scans = await listScans();
-    expect(scans[0].started).toBe('Not yet');
-    expect(scans[0].finished).toBe('Not yet');
+    expect(scans[0].started).toBe('Pending');
+    expect(scans[0].finished).toBe('Running');
   });
 
   it('returns empty array for empty response', async () => {

@@ -834,12 +834,12 @@ class SpiderFootWebUi:
         if meta[3] != 0:
             started = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(meta[3]))
         else:
-            started = "Not yet"
+            started = "Pending"
 
         if meta[4] != 0:
             finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(meta[4]))
         else:
-            finished = "Not yet"
+            finished = "Running"
 
         ret['meta'] = [meta[0], meta[1], meta[2], started, finished, meta[5]]
         ret['config'] = dbh.scanConfigGet(id)
@@ -1776,12 +1776,12 @@ class SpiderFootWebUi:
                     riskmatrix[c[0]] = c[1]
 
             if row[4] == 0:
-                started = "Not yet"
+                started = "Pending"
             else:
                 started = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[4]))
 
             if row[5] == 0:
-                finished = "Not yet"
+                finished = "Running"
             else:
                 finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[5]))
 
