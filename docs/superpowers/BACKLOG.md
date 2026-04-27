@@ -111,11 +111,9 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 
 Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `all`-modules scan). Connection storm + password-leak items have already shipped (`68607acc`, `4c983be1`, `7a0a1fcc`). Items below remain open.
 
-### Cull `sfp_torch` — dead Tor onion
-- **What:** the module fetches `http://torchdeedp3i2jigzjdmfpn5ttjhthh5wbmda2rr3jvqjg5p77c54dqd.onion/`. The onion is unreachable from the cluster (213 connect-timeouts in one 7.6h scan).
-- **Decision:** verify whether Torch has moved to a new onion. If yes — bump the URL constant. If no (looks like the case) — cull the module via the same Tier-3 process used for `sfp_crobat_api` etc.
-- **Size:** small. ~10 minutes if the call is "cull".
-- **Value:** removes 213 sequential 30s timeouts per scan when Tor routing is enabled.
+### Cull `sfp_torch` — shipped 2026-04-27
+- Onion `torchdeedp3i2jigzjdmfpn5ttjhthh5wbmda2rr3jvqjg5p77c54dqd.onion` is unreachable; 213 connect-timeouts in one 7.6h scan. Module had `errorprone` flag from upstream — long-known-flaky. `sfp_ahmia` / `sfp_onioncity` / `sfp_onionsearchengine` remain as Tor-search alternatives, no coverage gap.
+- Removed: `modules/sfp_torch.py`, `test/unit/modules/test_sfp_torch.py`, `test/integration/modules/test_sfp_torch.py`.
 
 ### Trim `sfp_accounts` site list — kill cluster-blocked endpoints
 - **What:** the bundled username-existence checks include endpoints that consistently fail from inside k3s (anti-scrape, region-blocked, or simply dead): `eporner.com`, `joindota.com`, `pikabu.ru`, `promodj.com`, `tindie.com`, `anilist.co`, `bitchute.com`, plus dozens more. Each timeout costs ~30s.
@@ -178,7 +176,7 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 | ~~Low~~ Done | ~~`sfp_holehe`~~ — shipped 2026-04-26 |
 | Medium | Trim `sfp_accounts` site list (cluster-blocked endpoints) |
 | Medium | Shared DNS-blacklist resolver |
-| Low | Cull `sfp_torch` (dead onion) |
+| ~~Low~~ Done | ~~Cull `sfp_torch` (dead onion)~~ — shipped 2026-04-27 |
 | Low | External-service maintenance pass (crobat / coinblocker / crt / commoncrawl / searchcode / dnsdumpster / subdomain_takeover) |
 | Low | Demote misconfigured-module ERROR → WARNING |
 | Low | UI: `scanlist` "Not yet" → "Pending"/"Running" alignment |

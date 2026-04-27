@@ -139,7 +139,7 @@ Seven consumer modules talk to self-hosted services in the OhDeere k3s cluster v
 
 See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 
-### FREE_NOAUTH_UNLIMITED (98)
+### FREE_NOAUTH_UNLIMITED (97)
 
 - sfp_adguard_dns
 - sfp_ahmia
@@ -226,7 +226,6 @@ See `docs/superpowers/specs/2026-04-20-ohdeere-*` for per-module specs.
 - sfp_threatcrowd
 - sfp_threatfox
 - sfp_threatminer
-- sfp_torch
 - sfp_torexits
 - sfp_trumail
 - sfp_twitter
