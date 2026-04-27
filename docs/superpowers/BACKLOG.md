@@ -121,17 +121,17 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 - **Size:** small if we have a representative log; medium if we want to do it properly with a per-site reachability test.
 - **Value:** with ~70 usernames discovered in a typical scan, each dropped flaky site removes 70 × 30s ≈ 35 minutes of scan time.
 
-### External-service maintenance pass
-- **What:** several modules emit ERROR for permanently-changed external endpoints. Each is a small, independent fix.
-  - `sfp_crobat_api` — service has been dead since 2022. Cull.
-  - `sfp_coinblocker` — gitlab.io URL returns 403. Find current location or cull.
-  - `sfp_crt` — frequent "service unavailable" from crt.sh. Treat as transient (downgrade to WARNING + retry once) rather than ERROR.
-  - `sfp_commoncrawl` — "Not able to find latest CommonCrawl indexes" — index path moved.
-  - `sfp_searchcode` — endpoint 404s. Verify and fix or cull.
-  - `sfp_dnsdumpster` — CSRF token fetch failing (anti-scrape). Hard to fix; consider culling.
-  - `sfp_subdomain_takeover` — fingerprints-list JSON parse error (`Extra data: line 1 column 4 (char 3)`). Upstream URL likely returning HTML or wrapped JSON now.
-- **Size:** small per item; medium for the whole sweep.
-- **Value:** each fix or cull removes recurring scan-noise and (where culls win) reduces wasted HTTP roundtrips.
+### External-service maintenance pass — partially shipped 2026-04-27
+Probed each upstream and acted per item:
+- ~~`sfp_crobat_api`~~ — culled. Sonar `omnisint.io` times out; service dead since 2022.
+- ~~`sfp_coinblocker`~~ — culled. `zerodot1.gitlab.io` Pages site is now auth-gated (302 → GitLab login → 403); raw list no longer publicly fetchable.
+- ~~`sfp_crt`~~ — fixed. 5xx (502/503/504) responses now log at WARNING and skip the query without tripping `errorState`; the next event simply tries again. Real failure modes (4xx, malformed body) still trip errorState.
+- ~~`sfp_subdomain_takeover`~~ — fixed. URL pointed at `haccer/subjack/master/fingerprints.json` which 404s (file removed from repo); switched to canonical `EdOverflow/can-i-take-over-xyz/master/fingerprints.json`. Same per-item schema, no parsing changes.
+
+**Still open** (deferred — these need more investigation than a one-line fix):
+- `sfp_commoncrawl` — index endpoint reachable (200), but the module's parsing of the index list fails. Needs module read.
+- `sfp_searchcode` — root site 200, search API endpoint 404. Endpoint path likely moved; needs reverse-engineering.
+- `sfp_dnsdumpster` — site up but CSRF token flow changed. Hard to keep fixing; consider culling (alternatives like `sfp_hackertarget` cover same surface).
 
 ### Demote misconfigured-module `ERROR` → `WARNING` — shipped 2026-04-27
 - 31 module call sites converted from `self.error(...)` to `self.warning(...)` for "you enabled X but did not set the API key/path/credentials" cases. User-config issues are now WARNING-level, freeing ERROR for real failures.
@@ -174,7 +174,7 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 | Medium | Trim `sfp_accounts` site list (cluster-blocked endpoints) |
 | Medium | Shared DNS-blacklist resolver |
 | ~~Low~~ Done | ~~Cull `sfp_torch` (dead onion)~~ — shipped 2026-04-27 |
-| Low | External-service maintenance pass (crobat / coinblocker / crt / commoncrawl / searchcode / dnsdumpster / subdomain_takeover) |
+| Low | External-service maintenance pass — 4 of 7 done 2026-04-27; `sfp_commoncrawl`, `sfp_searchcode`, `sfp_dnsdumpster` still open |
 | ~~Low~~ Done | ~~Demote misconfigured-module ERROR → WARNING~~ — shipped 2026-04-27 |
 | ~~Low~~ Done | ~~UI: `scanlist` "Not yet" → "Pending"/"Running" alignment~~ — shipped 2026-04-27 |
 | ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |

@@ -107,9 +107,13 @@ class sfp_crt(SpiderFootPlugin):
             self.errorState = True
             return None
 
-        if res['code'] == '500' or res['code'] == '502' or res['code'] == '503':
-            self.error("crt.sh service is unavailable")
-            self.errorState = True
+        # 5xx from crt.sh is frequently transient (Sectigo's gateway 502s
+        # sporadically). Downgrade to a warning and let the next event try
+        # again rather than killing the module for the rest of the scan.
+        if res['code'] in ('500', '502', '503', '504'):
+            self.warning(
+                f"crt.sh transient {res['code']}; skipping this query"
+            )
             return None
 
         # Catch all other non-200 status codes, and presume something went wrong

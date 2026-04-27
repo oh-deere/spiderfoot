@@ -48,9 +48,13 @@ class sfp_subdomain_takeover(SpiderFootPlugin):
         for opt in userOpts.keys():
             self.opts[opt] = userOpts[opt]
 
+        # Switched 2026-04-27 from haccer/subjack (fingerprints.json removed
+        # from that repo) to EdOverflow/can-i-take-over-xyz, which is the
+        # canonical maintained list. Same per-item schema (service / cname /
+        # fingerprint / nxdomain), so no parsing changes required.
         content = self.sf.cacheGet("subjack-fingerprints", 48)
         if content is None:
-            url = "https://raw.githubusercontent.com/haccer/subjack/master/fingerprints.json"
+            url = "https://raw.githubusercontent.com/EdOverflow/can-i-take-over-xyz/master/fingerprints.json"
             res = self.sf.fetchUrl(url, useragent="SpiderFoot")
 
             if res['content'] is None:
