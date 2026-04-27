@@ -154,7 +154,7 @@ class sfp_certspotter(SpiderFootPlugin):
             return
 
         if self.opts['api_key'] == "":
-            self.error(f"You enabled {self.__class__.__name__} but did not set an API key!")
+            self.warning(f"You enabled {self.__class__.__name__} but did not set an API key!")
             self.errorState = True
             return
 

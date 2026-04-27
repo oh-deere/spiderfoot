@@ -87,7 +87,7 @@ class sfp_tool_whatweb(SpiderFootPlugin):
         self.results[eventData] = True
 
         if not self.opts['whatweb_path']:
-            self.error("You enabled sfp_tool_whatweb but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_whatweb but did not set a path to the tool!")
             self.errorState = True
             return
 

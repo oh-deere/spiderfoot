@@ -113,7 +113,7 @@ class sfp_tool_dnstwist(SpiderFootPlugin):
             cmd = ['dnstwist']
         else:
             if not self.opts['dnstwistpath']:
-                self.error("You enabled sfp_tool_dnstwist but did not set a path to the tool!")
+                self.warning("You enabled sfp_tool_dnstwist but did not set a path to the tool!")
                 self.errorState = True
                 return
 

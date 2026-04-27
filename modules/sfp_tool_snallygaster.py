@@ -89,7 +89,7 @@ class sfp_tool_snallygaster(SpiderFootPlugin):
         self.results[eventData] = True
 
         if not self.opts['snallygaster_path']:
-            self.error("You enabled sfp_tool_snallygaster but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_snallygaster but did not set a path to the tool!")
             self.errorState = True
             return
 

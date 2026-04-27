@@ -182,7 +182,7 @@ class sfp_customfeed(SpiderFootPlugin):
             return
 
         if self.opts['url'] == "":
-            self.error("You enabled sfp_customfeed but defined no custom feed URL!")
+            self.warning("You enabled sfp_customfeed but defined no custom feed URL!")
             self.errorState = True
             return
 

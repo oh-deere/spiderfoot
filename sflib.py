@@ -198,6 +198,18 @@ class SpiderFoot:
 
         self.log.error(message, extra={'scanId': self._scanId})
 
+    def warning(self, message: str) -> None:
+        """Log a warning message — user-correctable conditions (missing
+        API key, missing tool path, etc.) that aren't code errors.
+
+        Args:
+            message (str): warning message
+        """
+        if not self.opts['__logging']:
+            return
+
+        self.log.warning(message, extra={'scanId': self._scanId})
+
     def fatal(self, error: str) -> None:
         """Print an error message and stacktrace then exit.
 

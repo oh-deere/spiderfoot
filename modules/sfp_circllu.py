@@ -146,7 +146,7 @@ class sfp_circllu(SpiderFootPlugin):
             return
 
         if self.opts['api_key_login'] == "" or self.opts['api_key_password'] == "":
-            self.error("You enabled sfp_circllu but did not set an credentials!")
+            self.warning("You enabled sfp_circllu but did not set an credentials!")
             self.errorState = True
             return
 

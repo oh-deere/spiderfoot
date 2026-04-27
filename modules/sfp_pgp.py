@@ -115,7 +115,7 @@ class sfp_pgp(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {event.module}")
 
         if not self.opts['keyserver_search1'] and not self.opts['keyserver_search2']:
-            self.error(f"You enabled {self.__class__.__name__} but did not set key server URLs")
+            self.warning(f"You enabled {self.__class__.__name__} but did not set key server URLs")
             self.errorState = True
             return
 

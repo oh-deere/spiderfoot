@@ -78,7 +78,7 @@ class sfp_tool_wafw00f(SpiderFootPlugin):
         self.results[eventData] = True
 
         if not self.opts['wafw00f_path']:
-            self.error("You enabled sfp_tool_wafw00f but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_wafw00f but did not set a path to the tool!")
             self.errorState = True
             return
 

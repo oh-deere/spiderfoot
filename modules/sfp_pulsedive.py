@@ -153,7 +153,7 @@ class sfp_pulsedive(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {srcModuleName}")
 
         if self.opts['api_key'] == "":
-            self.error("You enabled sfp_pulsedive but did not set an API key!")
+            self.warning("You enabled sfp_pulsedive but did not set an API key!")
             self.errorState = True
             return
 

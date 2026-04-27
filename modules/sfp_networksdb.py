@@ -264,7 +264,7 @@ class sfp_networksdb(SpiderFootPlugin):
             return
 
         if self.opts['api_key'] == '':
-            self.error("You enabled sfp_networksdb but did not set an API key!")
+            self.warning("You enabled sfp_networksdb but did not set an API key!")
             self.errorState = True
             return
 

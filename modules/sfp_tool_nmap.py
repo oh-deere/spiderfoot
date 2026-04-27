@@ -114,7 +114,7 @@ class sfp_tool_nmap(SpiderFootPlugin):
         self.results[eventData] = True
 
         if not self.opts['nmappath']:
-            self.error("You enabled sfp_tool_nmap but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_nmap but did not set a path to the tool!")
             self.errorState = True
             return
 

@@ -207,7 +207,7 @@ class sfp_censys(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {event.module}")
 
         if self.opts['censys_api_key_uid'] == "" or self.opts['censys_api_key_secret'] == "":
-            self.error(f"You enabled {self.__class__.__name__} but did not set an API uid/secret!")
+            self.warning(f"You enabled {self.__class__.__name__} but did not set an API uid/secret!")
             self.errorState = True
             return
 

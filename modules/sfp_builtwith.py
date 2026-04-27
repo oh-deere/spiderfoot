@@ -136,7 +136,7 @@ class sfp_builtwith(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {srcModuleName}")
 
         if self.opts['api_key'] == "":
-            self.error("You enabled sfp_builtwith but did not set an API key!")
+            self.warning("You enabled sfp_builtwith but did not set an API key!")
             self.errorState = True
             return
 

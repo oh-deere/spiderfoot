@@ -263,7 +263,7 @@ class sfp_alienvault(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {srcModuleName}")
 
         if self.opts['api_key'] == "":
-            self.error(f"You enabled {self.__class__.__name__} but did not set an API key!")
+            self.warning(f"You enabled {self.__class__.__name__} but did not set an API key!")
             self.errorState = True
             return
 

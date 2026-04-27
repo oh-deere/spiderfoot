@@ -157,7 +157,7 @@ class sfp_securitytrails(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {srcModuleName}")
 
         if self.opts['api_key'] == "":
-            self.error("You enabled sfp_securitytrails but did not set an API uid/secret!")
+            self.warning("You enabled sfp_securitytrails but did not set an API uid/secret!")
             self.errorState = True
             return
 

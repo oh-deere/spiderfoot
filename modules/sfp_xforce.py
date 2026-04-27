@@ -212,7 +212,7 @@ class sfp_xforce(SpiderFootPlugin):
         self.debug(f"Received event, {eventName}, from {event.module}")
 
         if self.opts['xforce_api_key'] == "" or self.opts['xforce_api_key_password'] == "":
-            self.error("You enabled sfp_xforce but did not set an API key/password!")
+            self.warning("You enabled sfp_xforce but did not set an API key/password!")
             self.errorState = True
             return
 

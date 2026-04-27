@@ -79,7 +79,7 @@ class sfp_tool_trufflehog(SpiderFootPlugin):
             return
 
         if not self.opts['trufflehog_path']:
-            self.error("You enabled sfp_tool_trufflehog but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_trufflehog but did not set a path to the tool!")
             self.errorState = True
             return
 

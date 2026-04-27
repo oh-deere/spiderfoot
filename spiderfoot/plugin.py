@@ -203,6 +203,20 @@ class SpiderFootPlugin():
         """
         self.log.error(*args, extra={'scanId': self.__scanId__}, **kwargs)
 
+    def warning(self, *args, **kwargs) -> None:
+        """For logging.
+        A wrapper around logging.warning() that adds the scanId to LogRecord.
+
+        Use for user-correctable conditions (missing API key, missing tool
+        path, unconfigured option) — things the operator should see, but
+        which are not code errors.
+
+        Args:
+            *args: passed through to logging.warning()
+            *kwargs: passed through to logging.warning()
+        """
+        self.log.warning(*args, extra={'scanId': self.__scanId__}, **kwargs)
+
     def enrichTarget(self, target: str) -> None:
         """Find aliases for a target.
 

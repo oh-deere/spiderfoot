@@ -85,7 +85,7 @@ class sfp_tool_nbtscan(SpiderFootPlugin):
             return
 
         if not self.opts['nbtscan_path']:
-            self.error("You enabled sfp_tool_nbtscan but did not set a path to the tool!")
+            self.warning("You enabled sfp_tool_nbtscan but did not set a path to the tool!")
             self.errorState = True
             return
 

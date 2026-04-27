@@ -133,11 +133,9 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 - **Size:** small per item; medium for the whole sweep.
 - **Value:** each fix or cull removes recurring scan-noise and (where culls win) reduces wasted HTTP roundtrips.
 
-### Demote misconfigured-module `ERROR` → `WARNING`
-- **What:** ~10 modules log ERROR when the user enabled them but didn't set the API key/path: `sfp_certspotter`, `sfp_builtwith`, `sfp_alienvault`, `sfp_abusix`, `sfp_abstractapi`, `sfp_circllu`, `sfp_customfeed`, `sfp_tool_cmseek`, etc.
-- **Approach:** swap `self.error(...)` for `self.warning(...)` (already supported by `SpiderFootPlugin`). User-config issues aren't code errors.
-- **Size:** small — ~10 one-line edits.
-- **Value:** removes recurring ERROR-level noise from logs and Grafana panels. Lets real errors stand out.
+### Demote misconfigured-module `ERROR` → `WARNING` — shipped 2026-04-27
+- 31 module call sites converted from `self.error(...)` to `self.warning(...)` for "you enabled X but did not set the API key/path/credentials" cases. User-config issues are now WARNING-level, freeing ERROR for real failures.
+- Added `warning()` method to `SpiderFootPlugin` and `SpiderFoot` (sflib) — the helpers previously only exposed info/error/debug. WARNING is a standard Python logging level so it flows correctly through both the JSON formatter and the per-scan SQLite log.
 
 ### Shared DNS-blacklist resolver
 - **What:** six DNS-blacklist modules — `sfp_uceprotect`, `sfp_surbl`, `sfp_dronebl`, `sfp_sorbs`, `sfp_spamcop`, `sfp_alienvaultiprep` — each independently DNS-resolve `<reversed-ip>.<bl-zone>` for every IP discovered. With ~200 IPs in a scan that's ~12k DNS lookups, mostly redundant since each module repeats the lookup pattern for the same IP set.
@@ -178,7 +176,7 @@ Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `al
 | Medium | Shared DNS-blacklist resolver |
 | ~~Low~~ Done | ~~Cull `sfp_torch` (dead onion)~~ — shipped 2026-04-27 |
 | Low | External-service maintenance pass (crobat / coinblocker / crt / commoncrawl / searchcode / dnsdumpster / subdomain_takeover) |
-| Low | Demote misconfigured-module ERROR → WARNING |
+| ~~Low~~ Done | ~~Demote misconfigured-module ERROR → WARNING~~ — shipped 2026-04-27 |
 | Low | UI: `scanlist` "Not yet" → "Pending"/"Running" alignment |
 | ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |
 | Low | Registry orphan-sweep |
