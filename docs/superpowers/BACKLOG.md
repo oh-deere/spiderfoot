@@ -107,6 +107,54 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 
 ---
 
+## Scan-time / module hygiene (from real-scan log triage)
+
+Triage of two production-cluster scans (2026-04-26 short scan, 2026-04-27 8h `all`-modules scan). Connection storm + password-leak items have already shipped (`68607acc`, `4c983be1`, `7a0a1fcc`). Items below remain open.
+
+### Cull `sfp_torch` — dead Tor onion
+- **What:** the module fetches `http://torchdeedp3i2jigzjdmfpn5ttjhthh5wbmda2rr3jvqjg5p77c54dqd.onion/`. The onion is unreachable from the cluster (213 connect-timeouts in one 7.6h scan).
+- **Decision:** verify whether Torch has moved to a new onion. If yes — bump the URL constant. If no (looks like the case) — cull the module via the same Tier-3 process used for `sfp_crobat_api` etc.
+- **Size:** small. ~10 minutes if the call is "cull".
+- **Value:** removes 213 sequential 30s timeouts per scan when Tor routing is enabled.
+
+### Trim `sfp_accounts` site list — kill cluster-blocked endpoints
+- **What:** the bundled username-existence checks include endpoints that consistently fail from inside k3s (anti-scrape, region-blocked, or simply dead): `eporner.com`, `joindota.com`, `pikabu.ru`, `promodj.com`, `tindie.com`, `anilist.co`, `bitchute.com`, plus dozens more. Each timeout costs ~30s.
+- **Approach:** instrument once over a representative scan, drop endpoints with a >50 % failure rate from the bundled `accounts.json` site list. Or move them to an opt-in extended list.
+- **Size:** small if we have a representative log; medium if we want to do it properly with a per-site reachability test.
+- **Value:** with ~70 usernames discovered in a typical scan, each dropped flaky site removes 70 × 30s ≈ 35 minutes of scan time.
+
+### External-service maintenance pass
+- **What:** several modules emit ERROR for permanently-changed external endpoints. Each is a small, independent fix.
+  - `sfp_crobat_api` — service has been dead since 2022. Cull.
+  - `sfp_coinblocker` — gitlab.io URL returns 403. Find current location or cull.
+  - `sfp_crt` — frequent "service unavailable" from crt.sh. Treat as transient (downgrade to WARNING + retry once) rather than ERROR.
+  - `sfp_commoncrawl` — "Not able to find latest CommonCrawl indexes" — index path moved.
+  - `sfp_searchcode` — endpoint 404s. Verify and fix or cull.
+  - `sfp_dnsdumpster` — CSRF token fetch failing (anti-scrape). Hard to fix; consider culling.
+  - `sfp_subdomain_takeover` — fingerprints-list JSON parse error (`Extra data: line 1 column 4 (char 3)`). Upstream URL likely returning HTML or wrapped JSON now.
+- **Size:** small per item; medium for the whole sweep.
+- **Value:** each fix or cull removes recurring scan-noise and (where culls win) reduces wasted HTTP roundtrips.
+
+### Demote misconfigured-module `ERROR` → `WARNING`
+- **What:** ~10 modules log ERROR when the user enabled them but didn't set the API key/path: `sfp_certspotter`, `sfp_builtwith`, `sfp_alienvault`, `sfp_abusix`, `sfp_abstractapi`, `sfp_circllu`, `sfp_customfeed`, `sfp_tool_cmseek`, etc.
+- **Approach:** swap `self.error(...)` for `self.warning(...)` (already supported by `SpiderFootPlugin`). User-config issues aren't code errors.
+- **Size:** small — ~10 one-line edits.
+- **Value:** removes recurring ERROR-level noise from logs and Grafana panels. Lets real errors stand out.
+
+### Shared DNS-blacklist resolver
+- **What:** six DNS-blacklist modules — `sfp_uceprotect`, `sfp_surbl`, `sfp_dronebl`, `sfp_sorbs`, `sfp_spamcop`, `sfp_alienvaultiprep` — each independently DNS-resolve `<reversed-ip>.<bl-zone>` for every IP discovered. With ~200 IPs in a scan that's ~12k DNS lookups, mostly redundant since each module repeats the lookup pattern for the same IP set.
+- **Approach:** introduce a small `spiderfoot/dnsbl.py` helper that batches lookups across blacklists for a given IP, with a per-scan cache. Modules call into it instead of hand-rolling their own DNS calls.
+- **Size:** medium — new helper + 6 module touches. Mild test surface.
+- **Value:** estimated 30-50 % reduction in scan time on IP-heavy targets.
+- **Status:** parked — only worth doing once the simpler hygiene items are done.
+
+### UI: scan list shows "Running" inline (consistency follow-up)
+- **What:** `scanlist` currently renders `started/ended=0` as `"Not yet"`; `scanstatus` (after `7a0a1fcc`) renders as `Pending`/`Running`. Different surface, but worth aligning eventually so the same sentinel reads the same way everywhere.
+- **Size:** trivial — pick one wording, replace in `sfwebui.py` `scanlist`.
+- **Value:** cosmetic consistency.
+
+---
+
 ## Search alternatives
 - `sfp_searxng` — self-hosted SearXNG (shipped 2026-04-20).
 - `sfp_ohdeere_search` — auth-gated OhDeere wrapper around SearXNG (shipped 2026-04-20).
@@ -128,6 +176,12 @@ Specs: `docs/superpowers/specs/2026-04-20-webui-spa-milestone-{1,2,3,4a,4b,4c,5}
 | ~~Low~~ Done | ~~`sfp_ohdeere_maps` /nearby extension~~ — shipped 2026-04-26 |
 | Low | `sfp_ohdeere_llm_entities` |
 | ~~Low~~ Done | ~~`sfp_holehe`~~ — shipped 2026-04-26 |
+| Medium | Trim `sfp_accounts` site list (cluster-blocked endpoints) |
+| Medium | Shared DNS-blacklist resolver |
+| Low | Cull `sfp_torch` (dead onion) |
+| Low | External-service maintenance pass (crobat / coinblocker / crt / commoncrawl / searchcode / dnsdumpster / subdomain_takeover) |
+| Low | Demote misconfigured-module ERROR → WARNING |
+| Low | UI: `scanlist` "Not yet" → "Pending"/"Running" alignment |
 | ~~Low~~ Done | ~~`sfp_duckduckgo`~~ — shipped 2026-04-26 |
 | Low | Registry orphan-sweep |
 | ~~Large~~ Done | ~~Postgres storage migration~~ — shipped 2026-04-20 |
